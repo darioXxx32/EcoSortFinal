@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -36,7 +37,8 @@ type Props = {
 };
 
 const titleFont = Platform.select({ ios: "Georgia", android: "serif", default: undefined });
-const LAN_FALLBACK_HOSTS = ["172.23.201.242", "192.168.1.14"];
+const LAN_FALLBACK_HOSTS = ["192.168.1.14"];
+const VIRTUAL_HOST_PREFIXES = ["172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29."];
 
 const QUICK_NOTES = [
   { label: "PET limpio", text: "Botella PET limpia y vacia" },
@@ -111,22 +113,43 @@ function getExpoHosts(): string[] {
   );
 }
 
+function isVirtualHost(host: string): boolean {
+  return VIRTUAL_HOST_PREFIXES.some((prefix) => host.startsWith(prefix));
+}
+
+function hostPriority(host: string): number {
+  if (host.startsWith("192.168.")) return 0;
+  if (host.startsWith("10.")) return 1;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host) && !isVirtualHost(host)) return 2;
+  if (isVirtualHost(host)) return 6;
+  if (host === "127.0.0.1" || host === "localhost") return 8;
+  return 4;
+}
+
+function sortBackendHosts(hosts: string[]): string[] {
+  return Array.from(new Set(hosts.filter(Boolean))).sort((left, right) => hostPriority(left) - hostPriority(right));
+}
+
 function inferApiUrl(): string {
-  const host = getExpoHosts()[0] ?? LAN_FALLBACK_HOSTS[0] ?? "127.0.0.1";
+  const host = sortBackendHosts([...LAN_FALLBACK_HOSTS, ...getExpoHosts()])[0] ?? "127.0.0.1";
   return normalizeApiUrl(`http://${host}:8000`);
 }
 
 function buildApiCandidates(currentUrl: string): string[] {
-  const expoHostCandidates = getExpoHosts().map((host) => normalizeApiUrl(`http://${host}:8000`));
-  const fallbackCandidates = LAN_FALLBACK_HOSTS.map((host) => normalizeApiUrl(`http://${host}:8000`));
+  const currentCandidate = normalizeApiUrl(currentUrl);
+  const currentHost = extractHost(currentCandidate);
+  const hostCandidates = sortBackendHosts([
+    ...LAN_FALLBACK_HOSTS,
+    ...getExpoHosts(),
+    ...(currentHost ? [currentHost] : []),
+    "127.0.0.1",
+    "localhost"
+  ]).map((host) => normalizeApiUrl(`http://${host}:8000`));
   return Array.from(
     new Set([
-      inferApiUrl(),
-      ...expoHostCandidates,
-      ...fallbackCandidates,
-      normalizeApiUrl(currentUrl),
-      normalizeApiUrl("http://127.0.0.1:8000"),
-      normalizeApiUrl("http://localhost:8000")
+      currentCandidate,
+      ...hostCandidates,
+      inferApiUrl()
     ])
   );
 }
@@ -168,8 +191,25 @@ function encouragementFor(labelKey: string) {
   return ENCOURAGEMENT[labelKey] ?? "Buen paso: una decision informada mejora la separacion desde casa.";
 }
 
+function mapQueryFor(labelKey: string, recommendation?: PredictionResponse["recommendation"]): string {
+  if (labelKey === "battery") return "punto limpio pilas reciclaje cerca";
+  if (labelKey === "trash" && recommendation?.safety_level === "alto") return "manejo residuos sanitarios domesticos cerca";
+  if (labelKey === "biological") return "compostaje comunitario cerca";
+  if (recommendation?.waste_stream?.toLowerCase().includes("peligroso")) return "punto limpio residuos especiales cerca";
+  return `centro de reciclaje ${recommendation?.family_display ?? recommendation?.label_display ?? "residuos"} cerca`;
+}
+
+function webQueryFor(labelKey: string, recommendation?: PredictionResponse["recommendation"]): string {
+  const detected = recommendation?.detected_item ?? recommendation?.label_display ?? labelKey;
+  if (labelKey === "biological") return `${detected} compostaje casero como hacerlo`;
+  if (labelKey === "trash" && recommendation?.safety_level === "alto") return `${detected} manejo seguro residuo sanitario`;
+  if (labelKey === "battery") return "por que las pilas no van a la basura comun";
+  return `como reciclar ${detected} correctamente`;
+}
+
 export default function HomeScreen({ onPrediction }: Props) {
   const [apiUrl, setApiUrl] = useState(inferApiUrl);
+  const [serverInput, setServerInput] = useState(() => inferApiUrl());
   const [note, setNote] = useState("Botella PET limpia y vacia");
   const [asset, setAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [result, setResult] = useState<PredictionResponse | null>(null);
@@ -186,6 +226,7 @@ export default function HomeScreen({ onPrediction }: Props) {
   const pulseScale = pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
   const scanTranslateY = scanAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 250] });
   const resultScale = resultAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] });
+  const resultLift = resultAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
 
   const overview = taxonomy?.overview;
   const recommendation = result?.recommendation;
@@ -199,6 +240,8 @@ export default function HomeScreen({ onPrediction }: Props) {
   const materialCues = recommendation?.material_cues ?? [];
   const youtubeSuggestions = result ? getSuggestionsForLabel(result.label_key) : [];
   const searchSuggestions = useMemo(() => getSearchSuggestions(note), [note]);
+  const connectionCandidates = useMemo(() => buildApiCandidates(serverInput).slice(0, 4), [serverInput]);
+  const primaryLearningQuery = youtubeSuggestions[0]?.query ?? webQueryFor(result?.label_key ?? "reciclaje", recommendation);
   const educationFact = result ? educationFactFor(result.label_key) : funFact;
   const encouragement = result ? encouragementFor(result.label_key) : "Escanea un residuo y EcoSort te dira la accion correcta.";
   const workflowSteps = [
@@ -206,6 +249,34 @@ export default function HomeScreen({ onPrediction }: Props) {
     { label: "Texto", detail: note.trim().length >= 3 ? "contexto" : "falta pista", active: note.trim().length >= 3 },
     { label: "Plan", detail: result ? "generado" : "por crear", active: Boolean(result) },
   ];
+  const extraActions = result && recommendation
+    ? [
+        {
+          title: "Video guia",
+          detail: "Aprende el proceso con una busqueda lista.",
+          tone: "#EAF4FF",
+          action: () => Linking.openURL(getYouTubeSearchUrl(primaryLearningQuery))
+        },
+        {
+          title: "Punto cercano",
+          detail: "Busca centros o puntos limpios en Maps.",
+          tone: "#EAF8E8",
+          action: () => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQueryFor(result.label_key, recommendation))}`)
+        },
+        {
+          title: "Guia rapida",
+          detail: "Consulta informacion web segun este residuo.",
+          tone: "#FFF5DE",
+          action: () => Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(webQueryFor(result.label_key, recommendation))}`)
+        },
+        {
+          title: "Compartir plan",
+          detail: "Envia los pasos a otra persona.",
+          tone: "#F1ECFF",
+          action: handleSharePlan
+        },
+      ]
+    : [];
 
   useEffect(() => {
     void syncBackend(apiUrl, true);
@@ -248,8 +319,10 @@ export default function HomeScreen({ onPrediction }: Props) {
 
     for (const candidate of candidates) {
       try {
+        if (showStatus) setConnectionMessage(`Probando ${candidate}...`);
         const [nextHealth, nextTaxonomy] = await Promise.all([checkHealth(candidate), fetchTaxonomy(candidate)]);
         setApiUrl(candidate);
+        setServerInput(candidate);
         setHealth(nextHealth);
         setTaxonomy(nextTaxonomy);
         setConnectionMessage(
@@ -264,8 +337,23 @@ export default function HomeScreen({ onPrediction }: Props) {
 
     setHealth(null);
     setTaxonomy(null);
-    setConnectionMessage("No se encontro la API. Inicia scripts/start_api.ps1 y reinicia Expo.");
+    setConnectionMessage("No se encontro la API. Escribe la IPv4 WiFi de tu PC, por ejemplo http://192.168.1.14:8000.");
     return null;
+  }
+
+  async function handleSharePlan() {
+    if (!recommendation) return;
+    const steps = primarySteps.slice(0, 4).map((step, index) => `${index + 1}. ${step}`).join("\n");
+    await Share.share({
+      message: `EcoSort: ${recommendation.quick_verdict ?? recommendation.recommendation_title}\n\n${steps}\n\n${recommendation.impact_note ?? ""}`.trim()
+    });
+  }
+
+  function handleNewScan() {
+    setResult(null);
+    setAsset(null);
+    setErrorMessage("");
+    setNote("Botella PET limpia y vacia");
   }
 
   async function handlePick(mode: "camera" | "gallery") {
@@ -300,7 +388,7 @@ export default function HomeScreen({ onPrediction }: Props) {
     setLoading(true);
     setErrorMessage("");
     try {
-      const activeUrl = health ? normalizeApiUrl(apiUrl) : await syncBackend(apiUrl);
+      const activeUrl = health ? normalizeApiUrl(apiUrl) : await syncBackend(serverInput);
       if (!activeUrl) {
         setErrorMessage("No encontre el backend. Levanta la API y vuelve a intentar.");
         return;
@@ -309,14 +397,14 @@ export default function HomeScreen({ onPrediction }: Props) {
       setResult(prediction);
       onPrediction(prediction, note);
     } catch (error) {
-      const normalizedUrl = normalizeApiUrl(apiUrl);
+      const normalizedUrl = normalizeApiUrl(serverInput);
       const isLoopback = normalizedUrl.includes("127.0.0.1") || normalizedUrl.includes("localhost");
       setErrorMessage(
         error instanceof Error && error.message !== "Network request failed"
           ? error.message
           : isLoopback
             ? "En celular usa la IP de tu PC, no 127.0.0.1."
-            : `No se pudo llegar a ${apiUrl}.`
+            : `No se pudo llegar a ${serverInput}.`
       );
     } finally {
       setLoading(false);
@@ -405,16 +493,59 @@ export default function HomeScreen({ onPrediction }: Props) {
             </View>
           </View>
 
-          <View style={styles.connectionBox}>
-            <View style={styles.connectionCopy}>
-              <Text style={styles.connectionTitle}>{health ? "Backend conectado" : "Backend pendiente"}</Text>
-              <Text style={styles.connectionUrl}>{normalizeApiUrl(apiUrl)}</Text>
+          <View style={styles.connectionPanel}>
+            <View style={styles.connectionBox}>
+              <View style={styles.connectionCopy}>
+                <View style={styles.connectionStatusLine}>
+                  <Animated.View
+                    style={[
+                      styles.connectionDot,
+                      health ? styles.connectionDotOn : styles.connectionDotWarn,
+                      !health && { opacity: pulseAnim, transform: [{ scale: pulseScale }] }
+                    ]}
+                  />
+                  <Text style={styles.connectionTitle}>{health ? "Backend conectado" : "Backend pendiente"}</Text>
+                </View>
+                <Text style={styles.connectionUrl}>{normalizeApiUrl(health ? apiUrl : serverInput)}</Text>
+              </View>
+              <Pressable style={styles.syncButton} onPress={() => syncBackend(serverInput)}>
+                <Text style={styles.syncButtonText}>Reconectar</Text>
+              </Pressable>
             </View>
-            <Pressable style={styles.syncButton} onPress={() => syncBackend(apiUrl)}>
-              <Text style={styles.syncButtonText}>Reconectar</Text>
-            </Pressable>
+
+            <View style={styles.serverEditor}>
+              <Text style={styles.fieldLabel}>URL del backend</Text>
+              <TextInput
+                style={styles.serverInput}
+                value={serverInput}
+                onChangeText={(value) => {
+                  setServerInput(value);
+                  setHealth(null);
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                placeholder="http://192.168.1.14:8000"
+                placeholderTextColor={colors.muted}
+              />
+              <Text style={styles.serverHint}>Si ves 172.x.x.x, cambia a la IPv4 WiFi de tu PC.</Text>
+              <View style={styles.candidateRow}>
+                {connectionCandidates.map((candidate) => (
+                  <Pressable
+                    key={candidate}
+                    style={styles.candidateChip}
+                    onPress={() => {
+                      setServerInput(candidate);
+                      void syncBackend(candidate);
+                    }}
+                  >
+                    <Text style={styles.candidateChipText}>{extractHost(candidate)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+            <Text style={styles.helper}>{connectionMessage}</Text>
           </View>
-          <Text style={styles.helper}>{connectionMessage}</Text>
 
           <View style={styles.textPanel}>
             <Text style={styles.fieldLabel}>Cuentalo como usuario real</Text>
@@ -540,6 +671,28 @@ export default function HomeScreen({ onPrediction }: Props) {
                 </View>
               ) : null}
 
+              <View style={styles.extraPanel}>
+                <View style={styles.extraHeader}>
+                  <View>
+                    <Text style={styles.actionTitle}>Opciones extra</Text>
+                    <Text style={styles.helperDark}>Elige que hacer despues del diagnostico.</Text>
+                  </View>
+                  <Pressable style={styles.newScanButton} onPress={handleNewScan}>
+                    <Text style={styles.newScanText}>Nuevo</Text>
+                  </Pressable>
+                </View>
+                <View style={styles.extraGrid}>
+                  {extraActions.map((item) => (
+                    <Animated.View key={item.title} style={[styles.extraCardWrap, { opacity: resultAnim, transform: [{ translateY: resultLift }] }]}>
+                      <Pressable style={[styles.extraCard, { backgroundColor: item.tone }]} onPress={() => void item.action()}>
+                        <Text style={styles.extraTitle}>{item.title}</Text>
+                        <Text style={styles.extraDetail}>{item.detail}</Text>
+                      </Pressable>
+                    </Animated.View>
+                  ))}
+                </View>
+              </View>
+
               <View style={styles.learnBox}>
                 <Text style={styles.learnTitle}>Informacion relacionada</Text>
                 <Text style={styles.helperDark}>{educationFact}</Text>
@@ -661,12 +814,23 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: colors.white, fontWeight: "900", fontSize: 15 },
   secondaryButton: { flex: 1, minHeight: 52, borderRadius: 8, backgroundColor: "#EDF6F8", borderWidth: 1, borderColor: "#CDE4EA", alignItems: "center", justifyContent: "center" },
   secondaryButtonText: { color: "#24556B", fontWeight: "900", fontSize: 15 },
+  connectionPanel: { gap: spacing.sm },
   connectionBox: { flexDirection: "row", alignItems: "center", gap: spacing.sm, borderRadius: 8, backgroundColor: "#F8FAF6", borderWidth: 1, borderColor: colors.line, padding: spacing.sm },
   connectionCopy: { flex: 1, gap: 3 },
+  connectionStatusLine: { flexDirection: "row", alignItems: "center", gap: 8 },
+  connectionDot: { width: 11, height: 11, borderRadius: 6 },
+  connectionDotOn: { backgroundColor: "#2E9F63" },
+  connectionDotWarn: { backgroundColor: "#D99A22" },
   connectionTitle: { color: colors.ink, fontWeight: "900" },
   connectionUrl: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   syncButton: { minHeight: 42, borderRadius: 8, backgroundColor: colors.mist, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
   syncButtonText: { color: colors.moss, fontWeight: "900" },
+  serverEditor: { backgroundColor: "#FAFBF8", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.sm, gap: 8 },
+  serverInput: { minHeight: 46, borderRadius: 8, borderWidth: 1, borderColor: "#D6E0D7", backgroundColor: colors.white, paddingHorizontal: 12, color: colors.ink, fontWeight: "800" },
+  serverHint: { color: colors.muted, fontSize: 12, lineHeight: 17, fontWeight: "700" },
+  candidateRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  candidateChip: { borderRadius: 999, backgroundColor: "#EEF6EA", borderWidth: 1, borderColor: "#D3E5CF", paddingHorizontal: 10, paddingVertical: 7 },
+  candidateChipText: { color: colors.moss, fontSize: 11, fontWeight: "900" },
   helper: { color: colors.muted, lineHeight: 20 },
   helperDark: { color: colors.ink, lineHeight: 21, fontWeight: "600" },
   textPanel: { gap: spacing.sm },
@@ -722,6 +886,15 @@ const styles = StyleSheet.create({
   stepNumber: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.ink, color: colors.white, textAlign: "center", lineHeight: 26, fontWeight: "900", fontSize: 12 },
   stepText: { flex: 1, color: colors.ink, lineHeight: 21, fontWeight: "700" },
   infoPanel: { backgroundColor: "#F7FAF2", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.md, gap: spacing.sm },
+  extraPanel: { backgroundColor: "#FAFBF8", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.md, gap: spacing.sm },
+  extraHeader: { flexDirection: "row", justifyContent: "space-between", gap: spacing.sm, alignItems: "flex-start" },
+  newScanButton: { minHeight: 36, borderRadius: 8, backgroundColor: colors.ink, paddingHorizontal: 13, alignItems: "center", justifyContent: "center" },
+  newScanText: { color: colors.white, fontWeight: "900", fontSize: 12 },
+  extraGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  extraCardWrap: { width: "48%", minWidth: 136 },
+  extraCard: { minHeight: 108, borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.sm, justifyContent: "space-between" },
+  extraTitle: { color: colors.ink, fontWeight: "900", fontSize: 15 },
+  extraDetail: { color: colors.muted, fontWeight: "700", fontSize: 12, lineHeight: 17 },
   learnBox: { backgroundColor: "#F0F0FF", borderRadius: 8, borderWidth: 1, borderColor: "#D0D0F0", padding: spacing.md, gap: spacing.sm },
   learnTitle: { color: "#5555AA", fontWeight: "900", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.7 },
   learnRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, backgroundColor: colors.white, borderRadius: 8, borderWidth: 1, borderColor: colors.line, paddingHorizontal: spacing.sm, paddingVertical: 10 },

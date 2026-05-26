@@ -129,8 +129,18 @@ function cleanUrl(apiUrl: string) {
   return normalizeApiUrl(apiUrl);
 }
 
+async function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs = 5000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function checkHealth(apiUrl: string): Promise<HealthResponse> {
-  const response = await fetch(`${cleanUrl(apiUrl)}/health`);
+  const response = await fetchWithTimeout(`${cleanUrl(apiUrl)}/health`, {}, 1800);
   if (!response.ok) {
     throw new Error("No se pudo conectar con la API.");
   }
@@ -142,7 +152,7 @@ export async function checkHealth(apiUrl: string): Promise<HealthResponse> {
 }
 
 export async function fetchTaxonomy(apiUrl: string): Promise<TaxonomyResponse> {
-  const response = await fetch(`${cleanUrl(apiUrl)}/taxonomy`);
+  const response = await fetchWithTimeout(`${cleanUrl(apiUrl)}/taxonomy`, {}, 2200);
   if (!response.ok) {
     throw new Error("No se pudo cargar la taxonomia.");
   }
@@ -179,10 +189,14 @@ export async function sendPrediction(
     type: asset.mimeType ?? "image/jpeg"
   } as unknown as Blob);
 
-  const response = await fetch(`${cleanUrl(apiUrl)}/predict`, {
-    method: "POST",
-    body: formData
-  });
+  const response = await fetchWithTimeout(
+    `${cleanUrl(apiUrl)}/predict`,
+    {
+      method: "POST",
+      body: formData
+    },
+    60000
+  );
 
   if (!response.ok) {
     const detail = await response.text();
