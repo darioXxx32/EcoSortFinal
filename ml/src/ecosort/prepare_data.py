@@ -74,6 +74,13 @@ CLASS_SPECIFIC_TEXTS = {
         "sobras vegetales para hacer composta",
         "restos de ensalada para compostaje",
         "hojas secas para abono",
+        "residuos de la cena del dia anterior",
+        "restos de la cena para compost",
+        "sobras de comida de ayer",
+        "desperdicios de comida de cocina",
+        "restos del almuerzo para organicos",
+        "sobras de arroz y verduras",
+        "residuos de cocina biodegradables",
     ],
     "metal": [
         "lata de aluminio limpia",

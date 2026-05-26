@@ -54,7 +54,10 @@
         ,
         "restos de poda",
         "flores marchitas",
-        "yerba usada"
+        "yerba usada",
+        "sobras de la cena",
+        "restos del almuerzo",
+        "desperdicios de cocina"
       ],
       "text_hints": [
         "tenia comida",
@@ -62,7 +65,11 @@
         "sobro del almuerzo",
         "es cascara",
         "es compostable",
-        "viene de la cocina"
+        "viene de la cocina",
+        "residuos de la cena del dia anterior",
+        "sobras de comida de ayer",
+        "restos de la cena",
+        "desperdicios de comida"
       ]
     },
     "brown-glass": {

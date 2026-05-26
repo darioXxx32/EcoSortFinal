@@ -18,6 +18,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
+import * as Network from "expo-network";
 
 import {
   checkHealth,
@@ -37,8 +38,9 @@ type Props = {
 };
 
 const titleFont = Platform.select({ ios: "Georgia", android: "serif", default: undefined });
-const LAN_FALLBACK_HOSTS = ["192.168.1.14"];
-const VIRTUAL_HOST_PREFIXES = ["172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29."];
+const LAN_FALLBACK_HOSTS = ["192.168.1.14", "172.23.201.242"];
+const COMMON_SERVER_OCTETS = [242, 14, 1, 2, 10, 20, 50, 100, 101, 102, 150, 200, 254];
+const DISCOVERY_BATCH_SIZE = 28;
 
 const QUICK_NOTES = [
   { label: "PET limpio", text: "Botella PET limpia y vacia" },
@@ -49,6 +51,10 @@ const QUICK_NOTES = [
   { label: "Pila", text: "Pila usada de control remoto" },
   { label: "Ropa", text: "Ropa en buen estado para donar" },
   { label: "Vidrio roto", text: "Frasco de vidrio roto y vacio" },
+  { label: "Tetrapak", text: "Envase tetrapak de jugo ya vacio" },
+  { label: "Aceite", text: "Aceite de cocina usado en una botella cerrada" },
+  { label: "Medicamento", text: "Medicamentos vencidos en su caja" },
+  { label: "Papel mojado", text: "Papel mojado con restos de comida" },
 ];
 
 const CATEGORY_STORIES = [
@@ -113,15 +119,30 @@ function getExpoHosts(): string[] {
   );
 }
 
-function isVirtualHost(host: string): boolean {
-  return VIRTUAL_HOST_PREFIXES.some((prefix) => host.startsWith(prefix));
+function parseIpv4(host?: string | null): number[] | null {
+  if (!host) return null;
+  const parts = host.split(".").map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return null;
+  return parts;
+}
+
+function isPrivateIpv4(host?: string | null): boolean {
+  const parts = parseIpv4(host);
+  if (!parts) return false;
+  const [first, second] = parts;
+  return first === 10 || (first === 172 && second >= 16 && second <= 31) || (first === 192 && second === 168);
+}
+
+function subnetPrefix(host?: string | null): string | null {
+  const parts = parseIpv4(host);
+  if (!parts || !isPrivateIpv4(host)) return null;
+  return `${parts[0]}.${parts[1]}.${parts[2]}.`;
 }
 
 function hostPriority(host: string): number {
   if (host.startsWith("192.168.")) return 0;
   if (host.startsWith("10.")) return 1;
-  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host) && !isVirtualHost(host)) return 2;
-  if (isVirtualHost(host)) return 6;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return 2;
   if (host === "127.0.0.1" || host === "localhost") return 8;
   return 4;
 }
@@ -135,9 +156,28 @@ function inferApiUrl(): string {
   return normalizeApiUrl(`http://${host}:8000`);
 }
 
-function buildApiCandidates(currentUrl: string): string[] {
+function buildSubnetCandidates(deviceIp?: string | null, currentUrl?: string): string[] {
+  const prefix = subnetPrefix(deviceIp);
+  if (!prefix) return [];
+  const deviceLastOctet = parseIpv4(deviceIp)?.[3];
+  const currentHost = extractHost(currentUrl);
+  const preferredOctets = [
+    ...(currentHost?.startsWith(prefix) ? [parseIpv4(currentHost)?.[3]] : []),
+    ...LAN_FALLBACK_HOSTS.filter((host) => host.startsWith(prefix)).map((host) => parseIpv4(host)?.[3]),
+    ...COMMON_SERVER_OCTETS
+  ].filter((value): value is number => typeof value === "number");
+  const allOctets = [
+    ...preferredOctets,
+    ...Array.from({ length: 254 }, (_, index) => index + 1)
+  ].filter((octet) => octet !== deviceLastOctet);
+  return Array.from(new Set(allOctets))
+    .map((octet) => normalizeApiUrl(`http://${prefix}${octet}:8000`));
+}
+
+function buildApiCandidates(currentUrl: string, deviceIp?: string | null): string[] {
   const currentCandidate = normalizeApiUrl(currentUrl);
   const currentHost = extractHost(currentCandidate);
+  const subnetCandidates = buildSubnetCandidates(deviceIp, currentUrl);
   const hostCandidates = sortBackendHosts([
     ...LAN_FALLBACK_HOSTS,
     ...getExpoHosts(),
@@ -148,6 +188,7 @@ function buildApiCandidates(currentUrl: string): string[] {
   return Array.from(
     new Set([
       currentCandidate,
+      ...subnetCandidates.slice(0, 16),
       ...hostCandidates,
       inferApiUrl()
     ])
@@ -207,6 +248,73 @@ function webQueryFor(labelKey: string, recommendation?: PredictionResponse["reco
   return `como reciclar ${detected} correctamente`;
 }
 
+type ActionIdea = {
+  title: string;
+  detail: string;
+  tone: string;
+  kind: "youtube" | "maps" | "web" | "share" | "new-scan";
+  query?: string;
+};
+
+function actionIdeasFor(labelKey: string, recommendation: PredictionResponse["recommendation"], primaryQuery: string): ActionIdea[] {
+  const detected = recommendation.detected_item ?? recommendation.label_display;
+  if (labelKey === "biological") {
+    return [
+      { title: "Compost express", detail: "Video para convertir sobras en abono.", tone: "#EAF8E8", kind: "youtube", query: primaryQuery },
+      { title: "Si / No compost", detail: "Confirma que restos separar antes.", tone: "#FFF5DE", kind: "web", query: `${detected} que se puede compostar y que no` },
+      { title: "Compost cercano", detail: "Busca punto o huerto comunitario.", tone: "#EAF4FF", kind: "maps", query: "compostaje comunitario cerca" },
+      { title: "Nuevo residuo", detail: "Escanea otro objeto sin perder ritmo.", tone: "#F1ECFF", kind: "new-scan" },
+    ];
+  }
+  if (labelKey === "battery") {
+    return [
+      { title: "Punto limpio", detail: "Encuentra acopio de pilas cercano.", tone: "#FFE7D6", kind: "maps", query: "punto limpio pilas cerca" },
+      { title: "Riesgo real", detail: "Aprende por que no va a basura.", tone: "#EAF4FF", kind: "youtube", query: "por que las pilas no van a la basura" },
+      { title: "Guardar seguro", detail: "Como almacenarla hasta entregarla.", tone: "#FFF5DE", kind: "web", query: "como guardar pilas usadas de forma segura" },
+      { title: "Compartir", detail: "Envia el plan a tu grupo.", tone: "#F1ECFF", kind: "share" },
+    ];
+  }
+  if (labelKey === "trash" && recommendation.safety_level === "alto") {
+    return [
+      { title: "Manejo seguro", detail: "Pasos para cerrar y desechar.", tone: "#FFE7D6", kind: "youtube", query: primaryQuery },
+      { title: "Que evitar", detail: "Por que no se dona ni recicla.", tone: "#FFF5DE", kind: "web", query: `${detected} no reciclable manejo sanitario` },
+      { title: "Ruta local", detail: "Busca manejo sanitario cercano.", tone: "#EAF4FF", kind: "maps", query: "manejo residuos sanitarios cerca" },
+      { title: "Compartir", detail: "Envia advertencia y pasos.", tone: "#F1ECFF", kind: "share" },
+    ];
+  }
+  if (labelKey === "clothes" || labelKey === "shoes") {
+    return [
+      { title: "Donar", detail: "Busca lugares de recepcion.", tone: "#EAF8E8", kind: "maps", query: "donar ropa zapatos cerca" },
+      { title: "Reparar", detail: "Ideas para alargar su vida.", tone: "#FFF5DE", kind: "youtube", query: `${detected} reparar reutilizar donar` },
+      { title: "Segunda vida", detail: "Opciones antes de botarlo.", tone: "#EAF4FF", kind: "web", query: `${detected} reutilizar donar reciclar` },
+      { title: "Compartir", detail: "Pasa el plan a otra persona.", tone: "#F1ECFF", kind: "share" },
+    ];
+  }
+  return [
+    { title: "Video guia", detail: "Aprende el proceso correcto.", tone: "#EAF4FF", kind: "youtube", query: primaryQuery },
+    { title: "Punto cercano", detail: "Busca reciclaje o acopio.", tone: "#EAF8E8", kind: "maps", query: mapQueryFor(labelKey, recommendation) },
+    { title: "Guia rapida", detail: "Consulta informacion especifica.", tone: "#FFF5DE", kind: "web", query: webQueryFor(labelKey, recommendation) },
+    { title: "Compartir plan", detail: "Envia los pasos a otra persona.", tone: "#F1ECFF", kind: "share" },
+  ];
+}
+
+function signalLevel(signal: string): `${number}%` {
+  const normalized = signal.toLowerCase();
+  if (normalized.includes("fuerte") || normalized.includes("activa")) return "100%";
+  if (normalized.includes("media") || normalized.includes("recibida")) return "72%";
+  if (normalized.includes("debil") || normalized.includes("pendiente")) return "42%";
+  return "58%";
+}
+
+async function readDeviceIp(): Promise<string | null> {
+  try {
+    const ip = await Network.getIpAddressAsync();
+    return isPrivateIpv4(ip) ? ip : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function HomeScreen({ onPrediction }: Props) {
   const [apiUrl, setApiUrl] = useState(inferApiUrl);
   const [serverInput, setServerInput] = useState(() => inferApiUrl());
@@ -216,6 +324,9 @@ export default function HomeScreen({ onPrediction }: Props) {
   const [taxonomy, setTaxonomy] = useState<TaxonomyResponse | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deviceIp, setDeviceIp] = useState<string | null>(null);
+  const [discoveryProgress, setDiscoveryProgress] = useState("");
+  const [showConnectionDetails, setShowConnectionDetails] = useState(false);
   const [connectionMessage, setConnectionMessage] = useState("Conectando automaticamente con EcoSort API...");
   const [errorMessage, setErrorMessage] = useState("");
   const [funFact] = useState(getRandomFact);
@@ -232,6 +343,9 @@ export default function HomeScreen({ onPrediction }: Props) {
   const recommendation = result?.recommendation;
   const activeMode = formatModeLabel(health?.mode ?? result?.mode ?? "");
   const modelEpochs = health?.model?.epochs_completed;
+  const modelWarning = health && !(health.mode ?? "").includes("keras")
+    ? (health.model?.hint ?? "Motor semantico activo: inicia con scripts/start_api.ps1 para usar best_model.keras.")
+    : "";
   const primarySteps = recommendation?.preparation_steps?.length
     ? recommendation.preparation_steps
     : recommendation?.disposal_steps ?? [];
@@ -240,7 +354,7 @@ export default function HomeScreen({ onPrediction }: Props) {
   const materialCues = recommendation?.material_cues ?? [];
   const youtubeSuggestions = result ? getSuggestionsForLabel(result.label_key) : [];
   const searchSuggestions = useMemo(() => getSearchSuggestions(note), [note]);
-  const connectionCandidates = useMemo(() => buildApiCandidates(serverInput).slice(0, 4), [serverInput]);
+  const connectionCandidates = useMemo(() => buildApiCandidates(serverInput, deviceIp).slice(0, 6), [serverInput, deviceIp]);
   const primaryLearningQuery = youtubeSuggestions[0]?.query ?? webQueryFor(result?.label_key ?? "reciclaje", recommendation);
   const educationFact = result ? educationFactFor(result.label_key) : funFact;
   const encouragement = result ? encouragementFor(result.label_key) : "Escanea un residuo y EcoSort te dira la accion correcta.";
@@ -249,37 +363,21 @@ export default function HomeScreen({ onPrediction }: Props) {
     { label: "Texto", detail: note.trim().length >= 3 ? "contexto" : "falta pista", active: note.trim().length >= 3 },
     { label: "Plan", detail: result ? "generado" : "por crear", active: Boolean(result) },
   ];
-  const extraActions = result && recommendation
-    ? [
-        {
-          title: "Video guia",
-          detail: "Aprende el proceso con una busqueda lista.",
-          tone: "#EAF4FF",
-          action: () => Linking.openURL(getYouTubeSearchUrl(primaryLearningQuery))
-        },
-        {
-          title: "Punto cercano",
-          detail: "Busca centros o puntos limpios en Maps.",
-          tone: "#EAF8E8",
-          action: () => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQueryFor(result.label_key, recommendation))}`)
-        },
-        {
-          title: "Guia rapida",
-          detail: "Consulta informacion web segun este residuo.",
-          tone: "#FFF5DE",
-          action: () => Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(webQueryFor(result.label_key, recommendation))}`)
-        },
-        {
-          title: "Compartir plan",
-          detail: "Envia los pasos a otra persona.",
-          tone: "#F1ECFF",
-          action: handleSharePlan
-        },
-      ]
-    : [];
+  const extraActions = result && recommendation ? actionIdeasFor(result.label_key, recommendation, primaryLearningQuery) : [];
+  const modalityTiles = [
+    { label: "Vision", detail: asset ? "imagen recibida" : "sin foto", active: Boolean(asset) },
+    { label: "Texto", detail: note.trim().length >= 3 ? "descripcion activa" : "sin contexto", active: note.trim().length >= 3 },
+    { label: "Reglas", detail: result ? "fusion aplicadas" : "listas", active: Boolean(result) },
+  ];
 
   useEffect(() => {
     void syncBackend(apiUrl, true);
+  }, []);
+
+  useEffect(() => {
+    void readDeviceIp().then((ip) => {
+      if (ip) setDeviceIp(ip);
+    });
   }, []);
 
   useEffect(() => {
@@ -314,17 +412,21 @@ export default function HomeScreen({ onPrediction }: Props) {
   }, [result, resultAnim]);
 
   async function syncBackend(nextApiUrl: string, showStatus = true): Promise<string | null> {
-    const candidates = buildApiCandidates(nextApiUrl);
+    const activeDeviceIp = deviceIp ?? await readDeviceIp();
+    if (activeDeviceIp && activeDeviceIp !== deviceIp) setDeviceIp(activeDeviceIp);
+    const candidates = buildApiCandidates(nextApiUrl, activeDeviceIp);
     if (showStatus) setConnectionMessage("Buscando backend EcoSort en la red local...");
 
     for (const candidate of candidates) {
       try {
         if (showStatus) setConnectionMessage(`Probando ${candidate}...`);
-        const [nextHealth, nextTaxonomy] = await Promise.all([checkHealth(candidate), fetchTaxonomy(candidate)]);
+        const [nextHealth, nextTaxonomy] = await Promise.all([checkHealth(candidate, 1200), fetchTaxonomy(candidate, 1600)]);
         setApiUrl(candidate);
         setServerInput(candidate);
         setHealth(nextHealth);
         setTaxonomy(nextTaxonomy);
+        setShowConnectionDetails(false);
+        setDiscoveryProgress(activeDeviceIp ? `Red detectada: ${activeDeviceIp}` : "");
         setConnectionMessage(
           `Conectado: ${formatModeLabel(nextHealth.mode)}${
             nextHealth.model?.epochs_completed ? `, ${nextHealth.model.epochs_completed} epocas` : ""
@@ -335,9 +437,50 @@ export default function HomeScreen({ onPrediction }: Props) {
       }
     }
 
+    const subnetCandidates = buildSubnetCandidates(activeDeviceIp, nextApiUrl).filter((candidate) => !candidates.includes(candidate));
+    const prefix = subnetPrefix(activeDeviceIp);
+    if (subnetCandidates.length && prefix) {
+      for (let index = 0; index < subnetCandidates.length; index += DISCOVERY_BATCH_SIZE) {
+        const batch = subnetCandidates.slice(index, index + DISCOVERY_BATCH_SIZE);
+        const checked = Math.min(index + batch.length, subnetCandidates.length);
+        if (showStatus) {
+          setConnectionMessage(`Escaneando ${prefix}x en puerto 8000...`);
+          setDiscoveryProgress(`${checked}/${subnetCandidates.length} direcciones revisadas`);
+        }
+        const probes = await Promise.all(
+          batch.map((candidate) =>
+            checkHealth(candidate, 650)
+              .then((nextHealth) => ({ candidate, nextHealth }))
+              .catch(() => null)
+          )
+        );
+        const found = probes.find((probe): probe is { candidate: string; nextHealth: HealthResponse } => Boolean(probe));
+        if (found) {
+          try {
+            const nextTaxonomy = await fetchTaxonomy(found.candidate, 2400);
+            setApiUrl(found.candidate);
+            setServerInput(found.candidate);
+            setHealth(found.nextHealth);
+            setTaxonomy(nextTaxonomy);
+            setShowConnectionDetails(false);
+            setDiscoveryProgress(`Servidor encontrado desde ${activeDeviceIp}`);
+            setConnectionMessage(
+              `Conectado: ${formatModeLabel(found.nextHealth.mode)}${
+                found.nextHealth.model?.epochs_completed ? `, ${found.nextHealth.model.epochs_completed} epocas` : ""
+              } en ${found.candidate}.`
+            );
+            return found.candidate;
+          } catch {
+          }
+        }
+      }
+    }
+
     setHealth(null);
     setTaxonomy(null);
-    setConnectionMessage("No se encontro la API. Escribe la IPv4 WiFi de tu PC, por ejemplo http://192.168.1.14:8000.");
+    setShowConnectionDetails(true);
+    setDiscoveryProgress(activeDeviceIp ? `Celular en ${activeDeviceIp}; no encontre EcoSort en esa subred.` : "No pude leer la IP local del celular.");
+    setConnectionMessage("No se encontro la API. Revisa firewall o escribe la URL que muestra scripts/start_api.ps1.");
     return null;
   }
 
@@ -354,6 +497,27 @@ export default function HomeScreen({ onPrediction }: Props) {
     setAsset(null);
     setErrorMessage("");
     setNote("Botella PET limpia y vacia");
+  }
+
+  async function openActionIdea(item: ActionIdea) {
+    if (item.kind === "share") {
+      await handleSharePlan();
+      return;
+    }
+    if (item.kind === "new-scan") {
+      handleNewScan();
+      return;
+    }
+    const query = item.query ?? primaryLearningQuery;
+    if (item.kind === "youtube") {
+      await Linking.openURL(getYouTubeSearchUrl(query));
+      return;
+    }
+    if (item.kind === "maps") {
+      await Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`);
+      return;
+    }
+    await Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
   }
 
   async function handlePick(mode: "camera" | "gallery") {
@@ -508,43 +672,56 @@ export default function HomeScreen({ onPrediction }: Props) {
                 </View>
                 <Text style={styles.connectionUrl}>{normalizeApiUrl(health ? apiUrl : serverInput)}</Text>
               </View>
-              <Pressable style={styles.syncButton} onPress={() => syncBackend(serverInput)}>
-                <Text style={styles.syncButtonText}>Reconectar</Text>
+              <Pressable
+                style={styles.syncButton}
+                onPress={() => health ? setShowConnectionDetails((value) => !value) : syncBackend(serverInput)}
+              >
+                <Text style={styles.syncButtonText}>{health ? (showConnectionDetails ? "Ocultar" : "Red") : "Reconectar"}</Text>
               </Pressable>
             </View>
 
-            <View style={styles.serverEditor}>
-              <Text style={styles.fieldLabel}>URL del backend</Text>
-              <TextInput
-                style={styles.serverInput}
-                value={serverInput}
-                onChangeText={(value) => {
-                  setServerInput(value);
-                  setHealth(null);
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                placeholder="http://192.168.1.14:8000"
-                placeholderTextColor={colors.muted}
-              />
-              <Text style={styles.serverHint}>Si ves 172.x.x.x, cambia a la IPv4 WiFi de tu PC.</Text>
-              <View style={styles.candidateRow}>
-                {connectionCandidates.map((candidate) => (
-                  <Pressable
-                    key={candidate}
-                    style={styles.candidateChip}
-                    onPress={() => {
-                      setServerInput(candidate);
-                      void syncBackend(candidate);
-                    }}
-                  >
-                    <Text style={styles.candidateChipText}>{extractHost(candidate)}</Text>
-                  </Pressable>
-                ))}
+            {(!health || showConnectionDetails) ? (
+              <View style={styles.serverEditor}>
+                <Text style={styles.fieldLabel}>URL del backend</Text>
+                <TextInput
+                  style={styles.serverInput}
+                  value={serverInput}
+                  onChangeText={(value) => {
+                    setServerInput(value);
+                    setHealth(null);
+                    setShowConnectionDetails(true);
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  placeholder="http://192.168.1.14:8000"
+                  placeholderTextColor={colors.muted}
+                />
+                <View style={styles.lanInfoRow}>
+                  <Text style={styles.serverHint}>Celular: {deviceIp ?? "detectando red..."}</Text>
+                  {discoveryProgress ? <Text style={styles.serverHint}>{discoveryProgress}</Text> : null}
+                </View>
+                <View style={styles.candidateRow}>
+                  {connectionCandidates.map((candidate) => (
+                    <Pressable
+                      key={candidate}
+                      style={styles.candidateChip}
+                      onPress={() => {
+                        setServerInput(candidate);
+                        void syncBackend(candidate);
+                      }}
+                    >
+                      <Text style={styles.candidateChipText}>{extractHost(candidate)}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Pressable style={styles.autoScanButton} onPress={() => syncBackend(serverInput)}>
+                  <Text style={styles.autoScanText}>Buscar automaticamente en esta red</Text>
+                </Pressable>
               </View>
-            </View>
+            ) : null}
             <Text style={styles.helper}>{connectionMessage}</Text>
+            {modelWarning ? <Text style={styles.modelWarning}>{modelWarning}</Text> : null}
           </View>
 
           <View style={styles.textPanel}>
@@ -579,6 +756,23 @@ export default function HomeScreen({ onPrediction }: Props) {
                 ))}
               </View>
             )}
+          </View>
+
+          <View style={styles.multimodalPanel}>
+            {modalityTiles.map((item, index) => (
+              <Animated.View
+                key={item.label}
+                style={[
+                  styles.modalityTile,
+                  item.active && styles.modalityTileActive,
+                  { opacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }
+                ]}
+              >
+                <Text style={[styles.modalityIndex, item.active && styles.modalityIndexActive]}>{index + 1}</Text>
+                <Text style={[styles.modalityLabel, item.active && styles.modalityLabelActive]}>{item.label}</Text>
+                <Text style={styles.modalityDetail}>{item.detail}</Text>
+              </Animated.View>
+            ))}
           </View>
 
           <Pressable style={[styles.analyzeButton, loading && styles.disabledButton]} onPress={handlePredict} disabled={loading}>
@@ -620,10 +814,47 @@ export default function HomeScreen({ onPrediction }: Props) {
                 </View>
               </View>
 
+              <View style={styles.extraPanel}>
+                <View style={styles.extraHeader}>
+                  <View>
+                    <Text style={styles.actionTitle}>Acciones para este resultado</Text>
+                    <Text style={styles.helperDark}>Opciones utiles segun lo que detecto la IA.</Text>
+                  </View>
+                  <Pressable style={styles.newScanButton} onPress={handleNewScan}>
+                    <Text style={styles.newScanText}>Nuevo</Text>
+                  </Pressable>
+                </View>
+                <View style={styles.extraGrid}>
+                  {extraActions.map((item) => (
+                    <Animated.View key={item.title} style={[styles.extraCardWrap, { opacity: resultAnim, transform: [{ translateY: resultLift }] }]}>
+                      <Pressable style={[styles.extraCard, { backgroundColor: item.tone }]} onPress={() => void openActionIdea(item)}>
+                        <Text style={styles.extraTitle}>{item.title}</Text>
+                        <Text style={styles.extraDetail}>{item.detail}</Text>
+                      </Pressable>
+                    </Animated.View>
+                  ))}
+                </View>
+              </View>
+
               <View style={styles.verdictPanel}>
                 <Text style={styles.actionTitle}>Veredicto</Text>
                 <Text style={styles.verdictText}>{recommendation.quick_verdict}</Text>
                 <Text style={styles.nextAction}>{recommendation.next_best_action}</Text>
+              </View>
+
+              <View style={styles.routePanel}>
+                <Text style={styles.actionTitle}>Ruta visual</Text>
+                <View style={styles.routeTrack}>
+                  {primarySteps.slice(0, 3).map((step, index) => (
+                    <Animated.View
+                      key={`${step}-route-${index}`}
+                      style={[styles.routeCard, { opacity: resultAnim, transform: [{ translateY: resultLift }] }]}
+                    >
+                      <Text style={styles.routeNumber}>{index + 1}</Text>
+                      <Text style={styles.routeText} numberOfLines={3}>{step}</Text>
+                    </Animated.View>
+                  ))}
+                </View>
               </View>
 
               <View style={styles.badgeRow}>
@@ -644,6 +875,14 @@ export default function HomeScreen({ onPrediction }: Props) {
                     <View style={styles.evidenceCopy}>
                       <Text style={styles.evidenceSignal}>{item.signal}</Text>
                       <Text style={styles.helperDark}>{item.detail}</Text>
+                      <View style={styles.evidenceMeter}>
+                        <Animated.View
+                          style={[
+                            styles.evidenceMeterFill,
+                            { width: signalLevel(item.signal), transform: [{ scaleX: resultAnim }] }
+                          ]}
+                        />
+                      </View>
                     </View>
                   </View>
                 ))}
@@ -670,28 +909,6 @@ export default function HomeScreen({ onPrediction }: Props) {
                   <View style={styles.chipRow}>{recommendation.useful_options.map((option) => <Badge key={option} text={option} light />)}</View>
                 </View>
               ) : null}
-
-              <View style={styles.extraPanel}>
-                <View style={styles.extraHeader}>
-                  <View>
-                    <Text style={styles.actionTitle}>Opciones extra</Text>
-                    <Text style={styles.helperDark}>Elige que hacer despues del diagnostico.</Text>
-                  </View>
-                  <Pressable style={styles.newScanButton} onPress={handleNewScan}>
-                    <Text style={styles.newScanText}>Nuevo</Text>
-                  </Pressable>
-                </View>
-                <View style={styles.extraGrid}>
-                  {extraActions.map((item) => (
-                    <Animated.View key={item.title} style={[styles.extraCardWrap, { opacity: resultAnim, transform: [{ translateY: resultLift }] }]}>
-                      <Pressable style={[styles.extraCard, { backgroundColor: item.tone }]} onPress={() => void item.action()}>
-                        <Text style={styles.extraTitle}>{item.title}</Text>
-                        <Text style={styles.extraDetail}>{item.detail}</Text>
-                      </Pressable>
-                    </Animated.View>
-                  ))}
-                </View>
-              </View>
 
               <View style={styles.learnBox}>
                 <Text style={styles.learnTitle}>Informacion relacionada</Text>
@@ -827,12 +1044,16 @@ const styles = StyleSheet.create({
   syncButtonText: { color: colors.moss, fontWeight: "900" },
   serverEditor: { backgroundColor: "#FAFBF8", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.sm, gap: 8 },
   serverInput: { minHeight: 46, borderRadius: 8, borderWidth: 1, borderColor: "#D6E0D7", backgroundColor: colors.white, paddingHorizontal: 12, color: colors.ink, fontWeight: "800" },
+  lanInfoRow: { gap: 2 },
   serverHint: { color: colors.muted, fontSize: 12, lineHeight: 17, fontWeight: "700" },
   candidateRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   candidateChip: { borderRadius: 999, backgroundColor: "#EEF6EA", borderWidth: 1, borderColor: "#D3E5CF", paddingHorizontal: 10, paddingVertical: 7 },
   candidateChipText: { color: colors.moss, fontSize: 11, fontWeight: "900" },
+  autoScanButton: { minHeight: 44, borderRadius: 8, backgroundColor: "#123B2C", alignItems: "center", justifyContent: "center" },
+  autoScanText: { color: colors.white, fontWeight: "900", fontSize: 13 },
   helper: { color: colors.muted, lineHeight: 20 },
   helperDark: { color: colors.ink, lineHeight: 21, fontWeight: "600" },
+  modelWarning: { color: "#7A431A", lineHeight: 19, fontWeight: "800", backgroundColor: "#FFF1DC", borderWidth: 1, borderColor: "#E3BF81", borderRadius: 8, padding: spacing.sm },
   textPanel: { gap: spacing.sm },
   fieldLabel: { color: colors.ink, fontWeight: "900", fontSize: 16 },
   fieldHint: { color: colors.muted, lineHeight: 19, fontWeight: "600" },
@@ -840,6 +1061,14 @@ const styles = StyleSheet.create({
   noteChip: { borderRadius: 999, backgroundColor: "#E7F2EC", borderWidth: 1, borderColor: "#D1E4D8", paddingHorizontal: 11, paddingVertical: 8 },
   noteChipText: { color: colors.forest, fontWeight: "800", fontSize: 12 },
   textArea: { minHeight: 104, textAlignVertical: "top", backgroundColor: "#FBFCFA", borderRadius: 8, borderWidth: 1, borderColor: colors.line, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: 16, color: colors.ink },
+  multimodalPanel: { flexDirection: "row", gap: spacing.sm },
+  modalityTile: { flex: 1, minHeight: 92, borderRadius: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: "#F8FAF6", padding: spacing.sm, justifyContent: "space-between" },
+  modalityTileActive: { backgroundColor: "#E4F4EA", borderColor: "#B7DFC4" },
+  modalityIndex: { width: 25, height: 25, borderRadius: 13, backgroundColor: "#E5E8E1", color: colors.muted, textAlign: "center", lineHeight: 25, fontWeight: "900", fontSize: 12 },
+  modalityIndexActive: { backgroundColor: colors.forest, color: colors.white },
+  modalityLabel: { color: colors.ink, fontWeight: "900", fontSize: 13 },
+  modalityLabelActive: { color: colors.forest },
+  modalityDetail: { color: colors.muted, fontWeight: "700", fontSize: 11, lineHeight: 15 },
   analyzeButton: { minHeight: 56, borderRadius: 8, backgroundColor: colors.moss, alignItems: "center", justifyContent: "center" },
   disabledButton: { opacity: 0.72 },
   analyzeButtonText: { color: colors.white, fontWeight: "900", fontSize: 16 },
@@ -863,6 +1092,11 @@ const styles = StyleSheet.create({
   actionTitle: { color: colors.moss, fontWeight: "900", textTransform: "uppercase", fontSize: 12, letterSpacing: 0.7 },
   verdictText: { color: colors.ink, fontSize: 18, lineHeight: 24, fontWeight: "900" },
   nextAction: { color: colors.ink, lineHeight: 21, fontWeight: "700" },
+  routePanel: { backgroundColor: "#F8FAF6", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.md, gap: spacing.sm },
+  routeTrack: { flexDirection: "row", gap: spacing.sm },
+  routeCard: { flex: 1, minHeight: 116, borderRadius: 8, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, padding: spacing.sm, gap: 8 },
+  routeNumber: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.ink, color: colors.white, textAlign: "center", lineHeight: 28, fontWeight: "900", fontSize: 12 },
+  routeText: { color: colors.ink, fontSize: 12, lineHeight: 17, fontWeight: "800" },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
   badge: { borderRadius: 999, backgroundColor: "#EDF6F8", borderWidth: 1, borderColor: "#CDE4EA", paddingHorizontal: 11, paddingVertical: 8 },
   badgeLight: { backgroundColor: "#F8FAF6", borderColor: colors.line },
@@ -880,6 +1114,8 @@ const styles = StyleSheet.create({
   evidenceSource: { width: 90, color: "#78451F", backgroundColor: "#F7EBDD", borderRadius: 8, overflow: "hidden", textAlign: "center", paddingVertical: 8, fontWeight: "900", fontSize: 12 },
   evidenceCopy: { flex: 1, gap: 2 },
   evidenceSignal: { color: colors.ink, fontWeight: "900", textTransform: "uppercase", fontSize: 12 },
+  evidenceMeter: { height: 7, borderRadius: 999, backgroundColor: "#E7ECE3", overflow: "hidden", marginTop: 5 },
+  evidenceMeterFill: { height: 7, borderRadius: 999, backgroundColor: "#2E6B4D" },
   confidenceText: { color: colors.moss, lineHeight: 21, fontWeight: "900" },
   planPanel: { backgroundColor: "#FAFBF8", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.md, gap: spacing.sm },
   stepRow: { flexDirection: "row", gap: spacing.sm, alignItems: "flex-start" },

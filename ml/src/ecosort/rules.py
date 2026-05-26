@@ -120,6 +120,29 @@ def normalize_text(text: str) -> str:
     if beverage_context:
         expansions.append("bebida envase botella plastico lata aluminio")
 
+    food_waste_context = any(
+        phrase in text
+        for phrase in [
+            "residuos de la cena",
+            "residuo de la cena",
+            "restos de la cena",
+            "sobras de la cena",
+            "sobras de comida",
+            "restos del almuerzo",
+            "sobras del almuerzo",
+            "residuos del almuerzo",
+            "comida del dia anterior",
+            "cena del dia anterior",
+            "comida de ayer",
+            "sobras de ayer",
+            "restos de cocina",
+            "desperdicios de comida",
+            "desperdicio de comida",
+        ]
+    )
+    if food_waste_context:
+        expansions.append("organico compost comida sobras restos cocina biodegradable")
+
     if expansions:
         text = f"{text} {' '.join(expansions)}"
 

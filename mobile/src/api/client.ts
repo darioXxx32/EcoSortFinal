@@ -85,6 +85,8 @@ export type HealthResponse = {
     epochs_completed?: number | null;
     test_accuracy?: number | null;
     test_loss?: number | null;
+    load_error?: string | null;
+    hint?: string | null;
   };
 };
 
@@ -139,8 +141,8 @@ async function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs
   }
 }
 
-export async function checkHealth(apiUrl: string): Promise<HealthResponse> {
-  const response = await fetchWithTimeout(`${cleanUrl(apiUrl)}/health`, {}, 1800);
+export async function checkHealth(apiUrl: string, timeoutMs = 1800): Promise<HealthResponse> {
+  const response = await fetchWithTimeout(`${cleanUrl(apiUrl)}/health`, {}, timeoutMs);
   if (!response.ok) {
     throw new Error("No se pudo conectar con la API.");
   }
@@ -151,8 +153,8 @@ export async function checkHealth(apiUrl: string): Promise<HealthResponse> {
   return payload as HealthResponse;
 }
 
-export async function fetchTaxonomy(apiUrl: string): Promise<TaxonomyResponse> {
-  const response = await fetchWithTimeout(`${cleanUrl(apiUrl)}/taxonomy`, {}, 2200);
+export async function fetchTaxonomy(apiUrl: string, timeoutMs = 2200): Promise<TaxonomyResponse> {
+  const response = await fetchWithTimeout(`${cleanUrl(apiUrl)}/taxonomy`, {}, timeoutMs);
   if (!response.ok) {
     throw new Error("No se pudo cargar la taxonomia.");
   }

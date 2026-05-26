@@ -196,6 +196,18 @@ INTENT_PATTERNS: dict[str, list[str]] = {
         "huerto",
         "jardin",
         "organico para planta",
+        "residuos de la cena",
+        "residuo de la cena",
+        "restos de la cena",
+        "sobras de la cena",
+        "restos del almuerzo",
+        "sobras del almuerzo",
+        "comida del dia anterior",
+        "cena del dia anterior",
+        "comida de ayer",
+        "sobras de ayer",
+        "restos de cocina",
+        "desperdicios de comida",
     ],
     "resale": [
         "vender",
@@ -436,6 +448,18 @@ ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("compostable", 7.5, "Residuo compostable"),
         ("comida", 8.0, "Restos de comida"),
         ("restos de comida", 8.5, "Restos de comida"),
+        ("residuos de la cena", 10.0, "Sobras de comida"),
+        ("residuo de la cena", 10.0, "Sobras de comida"),
+        ("restos de la cena", 10.0, "Sobras de comida"),
+        ("sobras de la cena", 10.0, "Sobras de comida"),
+        ("cena del dia anterior", 10.0, "Sobras de comida"),
+        ("comida del dia anterior", 9.5, "Sobras de comida"),
+        ("comida de ayer", 9.0, "Sobras de comida"),
+        ("sobras de ayer", 9.0, "Sobras de comida"),
+        ("residuos del almuerzo", 9.5, "Sobras de comida"),
+        ("restos del almuerzo", 9.5, "Sobras de comida"),
+        ("desperdicios de comida", 9.5, "Desperdicios de comida"),
+        ("restos de cocina", 9.0, "Restos de cocina"),
         ("cascara", 8.0, "Cascara"),
         ("cascara de banana", 8.0, "Cascara de banana"),
         ("cascara de huevo", 8.0, "Cascara de huevo"),
@@ -696,6 +720,11 @@ EXTRA_ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("cascaras de fruta", 8.5, "Cascaras de fruta"),
         ("sobras de arroz", 8.0, "Sobras de comida"),
         ("sobras de almuerzo", 8.0, "Sobras de comida"),
+        ("sobras de la cena", 9.5, "Sobras de comida"),
+        ("restos de la cena", 9.5, "Sobras de comida"),
+        ("residuos de la cena", 10.0, "Sobras de comida"),
+        ("cena del dia anterior", 10.0, "Sobras de comida"),
+        ("comida de ayer", 9.0, "Sobras de comida"),
         ("comida dañada", 8.5, "Comida danada"),
         ("comida danada", 8.5, "Comida danada"),
         ("restos vegetales", 8.0, "Restos vegetales"),
@@ -1039,6 +1068,13 @@ CONTEXT_BOOSTS: dict[str, list[tuple[list[str], float, str]]] = {
     ],
     "biological": [
         (["restos", "comida"], 10.0, "Restos de comida"),
+        (["residuos", "cena"], 11.0, "Sobras de comida"),
+        (["restos", "cena"], 11.0, "Sobras de comida"),
+        (["sobras", "cena"], 11.0, "Sobras de comida"),
+        (["cena", "anterior"], 10.0, "Sobras de comida"),
+        (["comida", "ayer"], 9.5, "Sobras de comida"),
+        (["desperdicios", "comida"], 10.0, "Desperdicios de comida"),
+        (["restos", "cocina"], 9.5, "Restos de cocina"),
         (["borra", "cafe"], 9.0, "Borra de cafe"),
         (["cascara", "huevo"], 8.5, "Cascara de huevo"),
         (["cascara", "platano"], 8.5, "Cascara de platano"),
@@ -1368,6 +1404,19 @@ def analyze_semantics(normalize_text_fn: Any, image_path: str | Path, user_text:
             matched_terms["trash"].append("contexto bebe/hijo")
         else:
             detected_items["trash"] = "Residuo sanitario"
+
+    if intent_flags.get("compost") and (
+        matched_terms["biological"] or any(token in normalized for token in ["cena", "almuerzo", "comida", "sobras", "restos"])
+    ):
+        scores["biological"] += 12.0
+        scores["cardboard"] *= 0.22
+        scores["paper"] *= 0.25
+        scores["plastic"] *= 0.45
+        scores["metal"] *= 0.45
+        if not matched_terms["biological"]:
+            matched_terms["biological"].append("residuo organico")
+        if detected_items["biological"] == DEFAULT_ITEMS["biological"]:
+            detected_items["biological"] = "Sobras de comida"
 
     reusable_hint = intent_flags["donation"] or intent_flags["reuse_container"] or any(
         token in normalized for token in ["taza", "mug", "vaso", "jarro", "reutilizable"]

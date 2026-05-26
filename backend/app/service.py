@@ -98,9 +98,17 @@ class EcoSortService:
                 self._real_engine = EcoSortKerasInferenceEngine(keras_model_path, tokenizer_path, metadata_path)
                 self.mode = "hybrid_keras"
                 self.model_info = self._load_model_info(metadata_path, keras_model_path)
-            except Exception:
+            except Exception as exc:
                 self._real_engine = None
                 self.mode = "heuristic"
+                self.model_info = {
+                    "artifact_format": "semantic",
+                    "artifact": str(keras_model_path),
+                    "epochs_completed": 0,
+                    "test_accuracy": None,
+                    "load_error": str(exc),
+                    "hint": "Inicia el backend con scripts/start_api.ps1 o con ml/.venv-keras para activar best_model.keras.",
+                }
 
         if self._real_engine is None and checkpoint_path.exists() and tokenizer_path.exists():
             try:
@@ -114,9 +122,17 @@ class EcoSortService:
                     "epochs_completed": None,
                     "test_accuracy": None,
                 }
-            except Exception:
+            except Exception as exc:
                 self._real_engine = None
                 self.mode = "heuristic"
+                self.model_info = {
+                    "artifact_format": "semantic",
+                    "artifact": str(checkpoint_path),
+                    "epochs_completed": 0,
+                    "test_accuracy": None,
+                    "load_error": str(exc),
+                    "hint": "No se pudo activar el modelo neuronal; se usa respaldo semantico.",
+                }
 
     def _load_model_info(self, metadata_path: Path | None, artifact_path: Path) -> dict[str, Any]:
         if metadata_path and metadata_path.exists():
@@ -211,6 +227,14 @@ class EcoSortService:
             merged_scores["shoes"] *= 0.03
             merged_scores["paper"] *= 0.30
             merged_scores["plastic"] *= 0.35
+            mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
+
+        if semantic.intent_flags.get("compost") and semantic.matched_terms["biological"]:
+            merged_scores["biological"] += 0.95
+            merged_scores["cardboard"] *= 0.18
+            merged_scores["paper"] *= 0.25
+            merged_scores["plastic"] *= 0.45
+            merged_scores["metal"] *= 0.45
             mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
 
         if not semantic.matched_terms["battery"]:
