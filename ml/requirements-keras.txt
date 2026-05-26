@@ -1,0 +1,7 @@
+numpy>=2.0,<2.2
+pandas>=2.2
+scikit-learn>=1.5
+pillow>=11.0
+matplotlib>=3.9
+tensorflow>=2.16,<2.19
+tqdm>=4.66

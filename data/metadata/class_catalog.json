@@ -1,0 +1,379 @@
+{
+  "app": {
+    "name": "EcoSort",
+    "tagline": "Tu residuo, en el lugar correcto.",
+    "elevator_pitch": "EcoSort usa inteligencia artificial multimodal para decirle a cualquier persona, en segundos, como desechar un residuo de forma responsable."
+  },
+  "labels": {
+    "battery": {
+      "display_name": "Bateria",
+      "waste_stream": "Residuo peligroso",
+      "recyclable": false,
+      "recyclable_condition": "Nunca debe ir a la basura comun ni al reciclaje domestico.",
+      "bin_color": "Punto limpio o recolector especial",
+      "primary_action": "Llevala a un punto de acopio de pilas o residuos electronicos.",
+      "secondary_action": "Guardala en un recipiente seco hasta entregarla.",
+      "summary": "Contiene materiales y quimicos que requieren manejo especial.",
+      "common_objects": [
+        "pila AA",
+        "bateria de celular",
+        "pila boton",
+        "bateria recargable",
+        "pila de litio",
+        "power bank",
+        "bateria externa",
+        "bateria de laptop",
+        "cargador portatil"
+      ],
+      "text_hints": [
+        "venia de un control remoto",
+        "es una pila usada",
+        "salio de un juguete",
+        "es una bateria pequena",
+        "es electronico",
+        "necesita punto limpio"
+      ]
+    },
+    "biological": {
+      "display_name": "Residuo organico",
+      "waste_stream": "Organico",
+      "recyclable": false,
+      "recyclable_condition": "No va al reciclaje seco; si existe, puede ir a compostaje.",
+      "bin_color": "Organicos o compost",
+      "primary_action": "Depositalo en compost o en el contenedor de organicos.",
+      "secondary_action": "Separalo del plastico y otros empaques.",
+      "summary": "Restos de comida o material biodegradable de origen organico.",
+      "common_objects": [
+        "restos de comida",
+        "cascara",
+        "fruta",
+        "vegetales",
+        "borra de cafe",
+        "bolsa de te",
+        "cascara de huevo"
+        ,
+        "restos de poda",
+        "flores marchitas",
+        "yerba usada"
+      ],
+      "text_hints": [
+        "tenia comida",
+        "es residuo de cocina",
+        "sobro del almuerzo",
+        "es cascara",
+        "es compostable",
+        "viene de la cocina"
+      ]
+    },
+    "brown-glass": {
+      "display_name": "Vidrio cafe",
+      "waste_stream": "Vidrio",
+      "recyclable": true,
+      "recyclable_condition": "Es reciclable si esta limpio, vacio y sin tapa contaminante.",
+      "bin_color": "Reciclaje de vidrio",
+      "primary_action": "Enjuagalo y llevalo al contenedor de vidrio.",
+      "secondary_action": "Si esta roto, envolvelo antes de manipularlo.",
+      "summary": "Botellas o frascos de vidrio color cafe o ambar.",
+      "common_objects": [
+        "botella de cerveza",
+        "frasco ambar",
+        "envase de vidrio oscuro",
+        "frasco de medicina",
+        "botella ambar"
+      ],
+      "text_hints": [
+        "venia de una bebida",
+        "es una botella de vidrio",
+        "esta vacio",
+        "tenia salsa",
+        "es vidrio ambar",
+        "venia de farmacia"
+      ]
+    },
+    "cardboard": {
+      "display_name": "Carton",
+      "waste_stream": "Papel y carton",
+      "recyclable": true,
+      "recyclable_condition": "Es reciclable solo si esta seco y sin grasa.",
+      "bin_color": "Reciclaje seco",
+      "primary_action": "Aplastalo y depositalo limpio y seco.",
+      "secondary_action": "Si tiene grasa o restos de comida, va a basura comun o compost segun el caso.",
+      "summary": "Cajas, empaques y piezas de carton corrugado o liviano.",
+      "common_objects": [
+        "caja",
+        "empaque",
+        "carton de envio",
+        "caja de cereal",
+        "huevera",
+        "tubo de carton",
+        "caja de zapatos"
+        ,
+        "carton prensado",
+        "tetrapak",
+        "cartulina"
+      ],
+      "text_hints": [
+        "es una caja",
+        "venia de un pedido",
+        "esta seco",
+        "tenia comida",
+        "es carton corrugado",
+        "es un empaque"
+      ]
+    },
+    "clothes": {
+      "display_name": "Ropa",
+      "waste_stream": "Textil",
+      "recyclable": true,
+      "recyclable_condition": "Prioriza reuso, donacion o reciclaje textil antes que basura comun.",
+      "bin_color": "Donacion o recoleccion textil",
+      "primary_action": "Si aun sirve, donala; si no, llevala a reciclaje textil.",
+      "secondary_action": "Separala limpia y seca.",
+      "summary": "Prendas textiles que pueden reusarse, donarse o reciclarse.",
+      "common_objects": [
+        "camiseta",
+        "pantalon",
+        "chaqueta",
+        "ropa usada",
+        "jean",
+        "sueter",
+        "toalla",
+        "sabana",
+        "medias",
+        "calcetines",
+        "trapo textil",
+        "cortina"
+      ],
+      "text_hints": [
+        "es ropa usada",
+        "todavia sirve",
+        "esta rota",
+        "es una prenda",
+        "se puede donar",
+        "es textil"
+      ]
+    },
+    "green-glass": {
+      "display_name": "Vidrio verde",
+      "waste_stream": "Vidrio",
+      "recyclable": true,
+      "recyclable_condition": "Es reciclable si esta limpio, vacio y sin contaminacion fuerte.",
+      "bin_color": "Reciclaje de vidrio",
+      "primary_action": "Enjuagalo y colocalo en el contenedor de vidrio.",
+      "secondary_action": "Retira liquidos y tapas si es posible.",
+      "summary": "Botellas o frascos de vidrio verde.",
+      "common_objects": [
+        "botella verde",
+        "frasco verde",
+        "envase de vidrio",
+        "botella de vino",
+        "vidrio verde"
+      ],
+      "text_hints": [
+        "venia de una bebida",
+        "es una botella verde",
+        "esta sucio",
+        "tenia liquido",
+        "es vidrio verde",
+        "es una botella de vino"
+      ]
+    },
+    "metal": {
+      "display_name": "Metal",
+      "waste_stream": "Metales",
+      "recyclable": true,
+      "recyclable_condition": "Es reciclable si esta vacio y razonablemente limpio.",
+      "bin_color": "Reciclaje seco",
+      "primary_action": "Enjuagalo y depositalo en reciclaje de metales.",
+      "secondary_action": "Aplasta latas si el sistema local lo permite.",
+      "summary": "Latas y envases metalicos comunes de consumo.",
+      "common_objects": [
+        "lata",
+        "envase metalico",
+        "tarro",
+        "aluminio",
+        "tapa metalica",
+        "bandeja de aluminio",
+        "lata de atun",
+        "clip metalico",
+        "grapa",
+        "chatarra pequena",
+        "aerosol"
+      ],
+      "text_hints": [
+        "es una lata",
+        "venia de gaseosa",
+        "tenia comida",
+        "esta limpio",
+        "es aluminio",
+        "es metalico"
+      ]
+    },
+    "paper": {
+      "display_name": "Papel",
+      "waste_stream": "Papel y carton",
+      "recyclable": true,
+      "recyclable_condition": "Es reciclable si esta limpio, seco y sin grasa.",
+      "bin_color": "Reciclaje seco",
+      "primary_action": "Dobla o apila el papel limpio y seco para reciclaje.",
+      "secondary_action": "Si esta mojado o grasoso, no debe reciclarse.",
+      "summary": "Hojas, cuadernos, sobres y papel de uso comun.",
+      "common_objects": [
+        "hoja",
+        "papel de oficina",
+        "sobre",
+        "folleto",
+        "cuaderno",
+        "ticket",
+        "recibo",
+        "bolsa de papel"
+        ,
+        "papel bond",
+        "cartulina",
+        "nota adhesiva",
+        "periodico"
+      ],
+      "text_hints": [
+        "es una hoja",
+        "esta escrito",
+        "esta mojado",
+        "venia de una libreta",
+        "es papel de oficina",
+        "es un recibo"
+      ]
+    },
+    "plastic": {
+      "display_name": "Plastico",
+      "waste_stream": "Plasticos",
+      "recyclable": true,
+      "recyclable_condition": "Reciclable si esta limpio, vacio y aceptado por el sistema local.",
+      "bin_color": "Reciclaje seco",
+      "primary_action": "Enjuagalo y depositalo en reciclaje de plasticos.",
+      "secondary_action": "Si contiene quimicos o aceite, limpialo antes de reciclar.",
+      "summary": "Botellas, envases y empaques plasticos comunes.",
+      "common_objects": [
+        "botella plastica",
+        "envase",
+        "empaque",
+        "recipiente",
+        "tapa plastica",
+        "envase de yogurt",
+        "bolsa plastica",
+        "botella PET"
+        ,
+        "film plastico",
+        "blister",
+        "galon plastico",
+        "envase cosmetico"
+      ],
+      "text_hints": [
+        "es de plastico",
+        "venia de un producto de limpieza",
+        "tenia gaseosa",
+        "esta sucio",
+        "es un envase PET",
+        "es un empaque plastico"
+      ]
+    },
+    "shoes": {
+      "display_name": "Zapatos",
+      "waste_stream": "Textil y reuso",
+      "recyclable": true,
+      "recyclable_condition": "Prioriza reuso, donacion o reciclaje especializado.",
+      "bin_color": "Donacion o recoleccion textil",
+      "primary_action": "Si aun se pueden usar, donalos o reusalos.",
+      "secondary_action": "Si estan muy desgastados, busca reciclaje textil o de calzado.",
+      "summary": "Calzado que puede reusarse o reciclarse por separado.",
+      "common_objects": [
+        "zapatilla",
+        "zapato",
+        "sandalia",
+        "calzado",
+        "bota",
+        "pantufla",
+        "chancla"
+        ,
+        "crocs",
+        "suela",
+        "tenis"
+      ],
+      "text_hints": [
+        "son zapatos",
+        "todavia sirven",
+        "estan gastados",
+        "es calzado usado",
+        "es una bota",
+        "se puede donar"
+      ]
+    },
+    "trash": {
+      "display_name": "Basura comun",
+      "waste_stream": "No reciclable",
+      "recyclable": false,
+      "recyclable_condition": "No corresponde al flujo de reciclaje domestico.",
+      "bin_color": "Basura comun",
+      "primary_action": "Depositalo en el contenedor de basura general.",
+      "secondary_action": "Si contiene elementos peligrosos, separalos antes.",
+      "summary": "Residuo mezclado o material que no puede recuperarse facilmente.",
+      "common_objects": [
+        "residuo mixto",
+        "desecho comun",
+        "envoltura sucia",
+        "panal",
+        "mascarilla",
+        "icopor",
+        "colilla"
+        ,
+        "chicle",
+        "ceramica rota",
+        "loza rota"
+      ],
+      "text_hints": [
+        "esta muy sucio",
+        "es una mezcla",
+        "no se puede limpiar",
+        "es basura comun",
+        "es sanitario",
+        "es de un solo uso"
+      ]
+    },
+    "white-glass": {
+      "display_name": "Vidrio transparente",
+      "waste_stream": "Vidrio",
+      "recyclable": true,
+      "recyclable_condition": "Es reciclable si esta limpio, vacio y sin residuos peligrosos.",
+      "bin_color": "Reciclaje de vidrio",
+      "primary_action": "Enjuagalo y llevatelo al contenedor de vidrio.",
+      "secondary_action": "Manipulalo con cuidado si esta quebrado.",
+      "summary": "Vidrio transparente o blanco, como frascos y botellas.",
+      "common_objects": [
+        "frasco",
+        "botella de vidrio",
+        "envase transparente",
+        "vaso de vidrio",
+        "copa de vidrio",
+        "frasco de mermelada",
+        "botella de perfume"
+        ,
+        "frasco de salsa",
+        "frasco de conserva"
+      ],
+      "text_hints": [
+        "es un frasco",
+        "venia de mermelada",
+        "esta limpio",
+        "se rompio",
+        "es vidrio transparente",
+        "venia de perfume"
+      ]
+    }
+  },
+  "contamination_keywords": {
+    "dirty": ["sucio", "tenia comida", "grasoso", "con restos", "aceite"],
+    "wet": ["mojado", "humedo", "empapado"],
+    "chemical": ["producto de limpieza", "quimico", "detergente", "cloro"],
+    "broken": ["roto", "quebrado", "partido"],
+    "reusable": ["todavia sirve", "reusable", "se puede donar", "utilizable"],
+    "sanitary": ["panal", "mascarilla", "colilla", "papel higienico usado", "residuo sanitario"]
+  }
+}

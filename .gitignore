@@ -1,0 +1,50 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+node_modules/
+.expo/
+dist/
+build/
+
+artifacts/
+outputs/
+checkpoints/
+ml/outputs/
+ml/artifacts/
+backend/.venv/
+mobile/.expo/
+
+*.onnx
+*.pt
+*.pth
+*.tflite
+*.log
+*.tmp
+*.bak
+# Android SDK / tooling
+.tools/
+# Heavy dataset
+garbage_classification/
+# Duplicate clean copy (no subir)
+github_clean_ecosort/
+# ML venv
+ml/.venv-keras/
+# Model files
+*.keras
+*.h5
+# Android build cache
+mobile/android/.gradle/
+mobile/android/.kotlin/
+mobile/android/**/.cxx/
+# ZIP, reports, temp
+proyect.zip
+informe_final/
+*.aux *.fdb_latexmk *.fls *.nav *.out *.snm *.toc

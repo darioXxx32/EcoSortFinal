@@ -1,0 +1,5 @@
+$ErrorActionPreference = "Stop"
+Write-Host "1) Abriendo API de EcoSort"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$PSScriptRoot\..\backend'; .\.venv\Scripts\Activate.ps1; uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+Write-Host "2) Abriendo app Expo"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$PSScriptRoot\..\mobile'; npm.cmd install; npx.cmd expo start --clear"

@@ -1,0 +1,128 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{underscore}
+
+\title{EcoSort: A Multimodal Mobile Assistant for Household Waste Classification and Disposal Guidance}
+
+\author{
+\IEEEauthorblockN{Dario Pomasqui}
+\IEEEauthorblockA{Yachay Tech\\
+Urcuqui, Ecuador\\
+dario.pomasqui@yachaytech.edu.ec}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+EcoSort is a multimodal application that classifies household waste items by combining a photographic input with a short free-text hint provided by the user. The system returns a class label, calibrated confidence, and structured disposal guidance enriched by semantic rules. Implementation targets a mobile-first workflow where the client (Expo/React Native) uploads an image and a note to a FastAPI backend that blends a learned multimodal model with a semantic heuristic engine.
+\end{abstract}
+
+\begin{IEEEkeywords}
+multimodal learning, waste classification, mobile AI, MobileNetV3, GRU
+\end{IEEEkeywords}
+
+\section{Introduction}
+Correct waste sorting is a small but impactful behavior that depends on contextual and often non-visual cues (contamination, reuse intent, safety). EcoSort aims to reduce uncertainty at the point of disposal by fusing visual information and short textual hints to produce a recommendation that is actionable for end users.
+
+This report summarizes the dataset and preprocessing, the proposed multimodal architecture, training and validation strategy, deployment choices, and quantitative results obtained with two exported artifacts present in the repository (a Keras export and a PyTorch ``pro'' export).
+
+\section{Methodology}
+\subsection{Input Modalities}
+The system ingests:
+\begin{itemize}
+	\item \textbf{Image}: RGB photo resized and normalized for a MobileNetV3-Small backbone.
+	\item \textbf{Text}: short user note tokenized with a compact vocabulary (SimpleTokenizer).
+\end{itemize}
+
+\subsection{Dataset and Preprocessing}
+The consolidated dataset covers 12 target categories: battery, biological, brown-glass, cardboard, clothes, green-glass, metal, paper, plastic, shoes, trash and white-glass. The repository contains CSV annotations under \texttt{ml/artifacts/data/} (train/val/test splits). Images are resized, augmented during training (random crop, flip, color jitter) and normalized with ImageNet statistics. Text is normalized with a lightweight rule set and encoded into fixed-length token sequences (padding/truncation).
+
+\subsection{Model Architecture}
+The learned model implements late fusion of visual and textual features:
+\begin{itemize}
+	\item \textbf{Image encoder}: MobileNetV3-Small (backbone), pooling to a 576-d feature vector. Optionally initialized with ImageNet weights and can be frozen during training.
+	\item \textbf{Text encoder}: Embedding layer followed by a bidirectional GRU (hidden projection 96 per direction, output dim 192).
+	\item \textbf{Fusion}: Concatenation of image (576) and text (192) features followed by a dense fusion block (256-d bottleneck, LayerNorm, GELU, dropout) and a final linear classifier producing logits for 12 classes.
+\end{itemize}
+
+Representative hyperparameters found in the repository artifacts: image size 128--160, text embedding dim 96, fusion dim 256, dropout 0.25--0.3, and vocab sizes in the hundreds (e.g., 213 tokens for the \texttt{keras\_pro} export).
+
+\subsection{Training and Validation}
+Training scripts use PyTorch and Keras variants. Key training choices:
+\begin{itemize}
+	\item Optimizer: AdamW.
+	\item Loss: Cross-entropy with optional class weights (to mitigate imbalance).
+	\item LR schedule: ReduceLROnPlateau based on validation F1/accuracy.
+	\item Regularization: dropout, gradient clipping and early stopping with patience.
+\end{itemize}
+
+During Keras training the pipeline exports \texttt{best\_model.keras}, \texttt{tokenizer.json} and \texttt{training\_summary.json} with per-epoch histories. For PyTorch training the \texttt{best\_model.pt} checkpoint and a structured \texttt{training\_summary.json} are generated.
+
+\subsection{Backend and Mobile Integration}
+The mobile client (Expo) communicates with a FastAPI backend (\texttt{backend/app/}) through a \texttt{/predict} endpoint. The backend initializes a \texttt{service} that can operate in several modes: pure heuristic (semantic rules), \texttt{hybrid\_keras}, or \texttt{hybrid\_ai} (PyTorch). When a learned engine is available the service blends model and heuristic probabilities using configurable weights and text-boosting heuristics to improve robustness in ambiguous scenarios.
+
+\section{Implementation Details}
+\subsection{Código y módulos principales}
+El repositorio organiza el código en módulos claros. A continuación se describen los componentes más relevantes y su propósito:
+\begin{itemize}
+	\item \textbf{Modelo (PyTorch / Keras)}: implementado en \texttt{ml/src/ecosort/model.py} (clases \texttt{EcoSortMultimodalNet}, \texttt{ImageEncoder}, \texttt{TextEncoder}). El modelo concatena características visuales (MobileNetV3-Small) y de texto (Embedding + Bi-GRU) y aplica una capa de fusión seguida de la clasificación.
+	\item \textbf{Preprocesamiento y dataset}: \texttt{ml/src/ecosort/dataset.py} y \texttt{ml/src/ecosort/prepare_data.py} cargan anotaciones CSV, aplican transformaciones a las imágenes (resize, crop, normalización) y tokenizan texto con \texttt{ml/src/ecosort/text_features.py} (clase \texttt{SimpleTokenizer}).
+	\item \textbf{Entrenamiento}: flujos en \texttt{ml/src/ecosort/train.py} (PyTorch) y \texttt{ml/src/ecosort/keras_train.py} (Keras). Ambos exportan artefactos (\texttt{best\_model.pt} / \texttt{best\_model.keras}, \texttt{tokenizer.json}, \texttt{training\_summary.json}) y historiales CSV.
+	\item \textbf{Inferencia}: \texttt{ml/src/ecosort/inference.py} (PyTorch) y \texttt{ml/src/ecosort/keras_inference.py} (Keras) cargan checkpoints y tokenizadores, preparan entradas (imagen + texto) y devuelven probabilidades y recomendaciones.
+	\item \textbf{Reglas semánticas}: implementadas en \texttt{backend/app/semantic_rules.py}; analizan el texto de usuario, detectan intenciones y ajustan probabilidades mediante heurísticas (text-boost, penalizaciones, enriquecimiento de etiquetas).
+	\item \textbf{Servicio y API}: \texttt{backend/app/service.py} crea la lógica \texttt{EcoSortService} que combina heurística y modelo aprendido; \texttt{backend/app/main.py} expone el endpoint \texttt{/predict} usado por la app móvil.
+	\item \textbf{Cliente móvil}: \texttt{mobile/src/api/client.ts} gestiona las solicitudes al backend y normaliza respuestas para la UI Expo/React Native.
+\end{itemize}
+
+\subsection{Flujo de ejecución resumido}
+Al recibir una petición desde la app móvil: (1) la imagen y la nota se suben al endpoint \texttt{/predict}; (2) el backend genera primero una predicción heurística con \texttt{semantic\_rules.py}; (3) si hay un modelo cargado, se obtiene la predicción aprendida; (4) se mezclan probabilidades con reglas de ponderado y text-boosting; (5) se responde con \texttt{label\_key}, \texttt{confidence}, \texttt{probabilities} y un objeto \texttt{recommendation} con pasos y justificación.
+
+\section{Results}
+Results were collected from the artifacts included in the repository. Two representative artifacts are reported below:
+
+\begin{table}[h]
+\centering
+\caption{Test set summary for exported artifacts found in \texttt{ml/artifacts}}
+\begin{tabular}{lcc}
+\toprule
+Artifact & Accuracy & Notes \\
+\midrule
+Keras export (\texttt{keras\_pro}) & 0.9207 & \texttt{training\_summary.json} (epochs completed: 120, image size: 128, vocab: 213) \\
+PyTorch \texttt{pro} (report) & 0.9991 & \texttt{ml/artifacts/reports/pro/test\_metrics.json} (macro F1: 0.9992) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The Keras export reached a test accuracy of approximately 0.9207 with test loss ~0.2485 (see \texttt{ml/artifacts/models/keras\_pro/training\_summary.json}). A separate \texttt{pro} export placed under \texttt{ml/artifacts/reports/pro} contains a near-perfect test report (accuracy 0.9991, macro F1 0.9992) and a saved confusion matrix image. These differences indicate multiple experimental runs and export formats; the \texttt{pro} export likely corresponds to a stronger or overfit configuration (verify with the training logs in \texttt{ml/artifacts/models/pro/}).
+
+Figure~\ref{fig:confmat} shows the test confusion matrix produced for the \texttt{pro} export.
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{../../ml/artifacts/reports/pro/test_confusion_matrix.png}
+\caption{Test confusion matrix for the \texttt{pro} export (file included in repository).}
+\label{fig:confmat}
+\end{figure}
+
+\section{Conclusions and Future Work}
+EcoSort demonstrates a practical multimodal pipeline that is deployable through a mobile client and a compact backend. The fusion of image and text improves context-aware disposal recommendations and enables a useful hybrid strategy where semantic heuristics complement learned predictions.
+
+Limitations and next steps:
+\begin{itemize}
+	\item Collect in-the-wild user notes to replace synthetic annotations and validate generalization.
+	\item Audit and compare the different exported artifacts to ensure realistic generalization (the \texttt{pro} report suggests potential overfitting). Use cross-validation and hold-out cities for robust evaluation.
+	\item Export and benchmark a lightweight TFLite / ONNX runtime for on-device inference. The repository already contains an ONNX exporter (\texttt{ml/src/ecosort/export\_onnx.py}) to assist this path.
+	\item Improve the UI/UX to request clarifying text prompts when confidence is low and add a lightweight on-device fallback.
+\end{itemize}
+
+\begin{thebibliography}{00}
+\bibitem{mobilenet} A. Howard \textit{et al.}, ``Searching for MobileNetV3,'' in \textit{Proc. IEEE/CVF Int. Conf. Computer Vision}, 2019.
+\bibitem{gru} K. Cho \textit{et al.}, ``Learning Phrase Representations using RNN Encoder-Decoder,'' 2014.
+\bibitem{pytorch} A. Paszke \textit{et al.}, ``PyTorch: An Imperative Style, High-Performance Deep Learning Library,'' in \textit{Advances in Neural Information Processing Systems}, 2019.
+\end{thebibliography}
+
+\end{document}
