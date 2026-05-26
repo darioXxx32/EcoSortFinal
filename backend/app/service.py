@@ -47,6 +47,8 @@ class HeuristicEngine:
         confidence = float(probabilities[best_label])
         recommendation = build_disposal_response(best_label, user_text, confidence)
         recommendation.update(build_semantic_enrichment(best_label, probabilities, self.catalog, semantic))
+        if semantic.intent_flags.get("sanitary"):
+            recommendation.setdefault("text_flags", {})["sanitary"] = True
         return ServicePrediction(
             mode="heuristic",
             label_key=best_label,
@@ -203,6 +205,14 @@ class EcoSortService:
                 if not semantic.matched_terms["cardboard"]:
                     merged_scores["cardboard"] *= 0.28
 
+        if semantic.intent_flags.get("sanitary"):
+            merged_scores["trash"] += 1.2
+            merged_scores["clothes"] *= 0.03
+            merged_scores["shoes"] *= 0.03
+            merged_scores["paper"] *= 0.30
+            merged_scores["plastic"] *= 0.35
+            mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
+
         if not semantic.matched_terms["battery"]:
             merged_scores["battery"] *= 0.14 if model_conf < 0.9 else 0.40
 
@@ -258,6 +268,8 @@ class EcoSortService:
 
         recommendation = build_disposal_response(final_label, user_text, final_confidence)
         recommendation.update(build_semantic_enrichment(final_label, final_probabilities, self.catalog, semantic))
+        if semantic.intent_flags.get("sanitary"):
+            recommendation.setdefault("text_flags", {})["sanitary"] = True
         recommendation["model_artifact"] = self.model_info.get("artifact_format")
         recommendation["model_epochs"] = self.model_info.get("epochs_completed")
 

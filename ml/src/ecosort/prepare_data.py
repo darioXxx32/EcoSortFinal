@@ -45,6 +45,8 @@ CLASS_SPECIFIC_TEXTS = {
         "carton limpio y seco",
         "carton de pizza con grasa",
         "caja aplastada para reciclaje",
+        "caja de jugo tetrapak vacia",
+        "envase de jugo de carton",
     ],
     "clothes": [
         "ropa que ya no me queda",
@@ -69,12 +71,18 @@ CLASS_SPECIFIC_TEXTS = {
         "borra de cafe para abono",
         "restos de comida organicos",
         "cascara de naranja para compost del jardin",
+        "sobras vegetales para hacer composta",
+        "restos de ensalada para compostaje",
+        "hojas secas para abono",
     ],
     "metal": [
         "lata de aluminio limpia",
         "lata vacia filosa",
         "lata de atun vacia",
         "tapa metalica reciclable",
+        "lata de jugo vacia",
+        "jugo en lata de aluminio",
+        "bebida en lata recien comprada",
     ],
     "white-glass": [
         "frasco de vidrio limpio",
@@ -95,6 +103,12 @@ CLASS_SPECIFIC_TEXTS = {
         "servilleta usada con comida",
         "papel con grasa",
         "empaque sucio no reciclable",
+        "panal usado de bebe",
+        "panales de mi hijo que ya no uso",
+        "panal sanitario en bolsa cerrada",
+        "residuo sanitario no reciclable",
+        "papel higienico usado",
+        "toalla sanitaria usada",
     ],
 }
 

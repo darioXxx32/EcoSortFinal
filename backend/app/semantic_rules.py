@@ -134,6 +134,31 @@ INTENT_PATTERNS: dict[str, list[str]] = {
         "oxidado",
         "oxidada",
     ],
+    "sanitary": [
+        "panal",
+        "panales",
+        "panal usado",
+        "panales usados",
+        "panal de bebe",
+        "panales de bebe",
+        "residuo sanitario",
+        "papel higienico usado",
+        "toalla sanitaria",
+        "tampon",
+        "curita",
+        "mascarilla usada",
+        "tapabocas usado",
+        "guante quirurgico",
+        "hisopo",
+    ],
+    "baby_care": [
+        "mi hijo",
+        "mi hija",
+        "bebe",
+        "bebes",
+        "nino pequeno",
+        "nina pequena",
+    ],
     "sharp": [
         "filoso",
         "filosa",
@@ -327,6 +352,7 @@ ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("metal", 7.0, "Metal"),
         ("lata", 9.0, "Lata de aluminio"),
         ("lata de bebida", 9.0, "Lata de bebida"),
+        ("lata de jugo", 9.5, "Lata de jugo"),
         ("lata de aluminio", 9.0, "Lata de aluminio"),
         ("aluminio", 8.0, "Aluminio"),
         ("aerosol", 7.5, "Envase metalico"),
@@ -340,6 +366,7 @@ ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("bebida en lata", 8.0, "Lata de bebida"),
         ("te en lata", 8.0, "Lata de bebida"),
         ("jugo en lata", 8.0, "Lata de bebida"),
+        ("jugo comprado en lata", 9.5, "Lata de jugo"),
         ("refresco en lata", 8.0, "Lata de bebida"),
         ("chatarra", 6.5, "Chatarra pequena"),
         ("clip", 5.5, "Clip metalico"),
@@ -471,6 +498,9 @@ ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("envoltura metalizada", 8.0, "Envoltura metalizada"),
         ("mezcla", 6.0, "Residuo mezclado"),
         ("panal", 8.5, "Panal"),
+        ("panales", 9.0, "Panales"),
+        ("panal de bebe", 9.5, "Panal de bebe"),
+        ("panales de bebe", 9.5, "Panales de bebe"),
         ("mascarilla", 8.0, "Mascarilla"),
         ("colilla", 8.0, "Colilla"),
         ("icopor", 8.5, "Icopor"),
@@ -486,6 +516,7 @@ ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("ceramica", 7.0, "Ceramica rota"),
         ("loza", 7.0, "Loza rota"),
         ("panal usado", 9.0, "Panal"),
+        ("panales usados", 9.5, "Panales usados"),
         ("pañal", 8.5, "Panal"),
     ],
 }
@@ -725,6 +756,11 @@ EXTRA_ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("papel con grasa", 8.5, "Papel con grasa"),
         ("pañal", 9.0, "Panal"),
         ("panal sucio", 9.0, "Panal"),
+        ("panales", 9.2, "Panales"),
+        ("panales sucios", 9.5, "Panales"),
+        ("panal de bebe", 9.6, "Panal de bebe"),
+        ("panales de bebe", 9.6, "Panales de bebe"),
+        ("panales de mi hijo", 10.0, "Panales de bebe"),
         ("cubrebocas", 8.0, "Mascarilla"),
         ("tapabocas", 8.0, "Mascarilla"),
         ("guante quirurgico", 8.0, "Residuo sanitario"),
@@ -806,6 +842,9 @@ DEMO_ALIAS_PACK: dict[str, list[tuple[str, float, str]]] = {
     "metal": [
         ("latas aplastadas", 9.0, "Latas aplastadas"),
         ("latas vacias", 9.0, "Latas vacias"),
+        ("lata de jugo", 9.5, "Lata de jugo"),
+        ("jugo en lata", 9.5, "Lata de jugo"),
+        ("bebida en lata", 9.0, "Lata de bebida"),
         ("lata oxidada", 8.0, "Lata oxidada"),
         ("conserva vacia", 8.5, "Lata de conserva"),
         ("tapa de cerveza", 8.0, "Tapa metalica"),
@@ -1025,6 +1064,50 @@ MATERIAL_TERMS = {
     "battery": {"bateria", "pila", "power", "bank", "litio"},
 }
 
+APPAREL_TERMS = {
+    "ropa",
+    "prenda",
+    "prendas",
+    "camisa",
+    "camiseta",
+    "pantalon",
+    "chaqueta",
+    "uniforme",
+    "zapato",
+    "zapatos",
+    "tenis",
+    "calzado",
+    "medias",
+    "calcetines",
+}
+
+EXPLICIT_DONATION_TERMS = {"donar", "donacion", "regalar", "regalo", "segunda mano", "marketplace"}
+SANITARY_TERMS = {
+    "panal",
+    "panales",
+    "papel higienico usado",
+    "toalla sanitaria",
+    "tampon",
+    "mascarilla usada",
+    "tapabocas usado",
+    "guante quirurgico",
+    "hisopo",
+    "curita",
+}
+BEVERAGE_TERMS = {"jugo", "bebida", "gaseosa", "refresco", "soda", "energizante"}
+BABY_CARE_TERMS = {"mi hijo", "mi hija", "bebe", "bebes", "nino pequeno", "nina pequena"}
+UNUSED_CLEAN_TERMS = {
+    "no los uso",
+    "no lo uso",
+    "no las uso",
+    "ya no los uso",
+    "ya no lo uso",
+    "estan limpios",
+    "estan sin usar",
+    "limpios",
+    "sin usar",
+}
+
 
 def _has_word(text: str, term: str) -> bool:
     return re.search(rf"\b{re.escape(term)}\b", text) is not None
@@ -1038,11 +1121,33 @@ def _match_phrase(text: str, phrase: str) -> bool:
     return phrase in text if " " in phrase else _has_word(text, phrase)
 
 
+def _has_apparel_context(text: str) -> bool:
+    return _has_any(text, APPAREL_TERMS)
+
+
+def _has_explicit_donation(text: str) -> bool:
+    return any(_match_phrase(text, term) for term in EXPLICIT_DONATION_TERMS)
+
+
+def _has_sanitary_context(text: str) -> bool:
+    explicit_sanitary = any(_match_phrase(text, term) for term in SANITARY_TERMS)
+    baby_care = any(_match_phrase(text, term) for term in BABY_CARE_TERMS)
+    unused_clean = any(_match_phrase(text, term) for term in UNUSED_CLEAN_TERMS)
+    return explicit_sanitary or (baby_care and unused_clean and not _has_apparel_context(text))
+
+
 def _detect_intents(normalized_text: str) -> dict[str, bool]:
-    return {
+    flags = {
         intent: any(_match_phrase(normalized_text, pattern) for pattern in patterns)
         for intent, patterns in INTENT_PATTERNS.items()
     }
+    sanitary_context = _has_sanitary_context(normalized_text)
+    if sanitary_context:
+        flags["sanitary"] = True
+        flags["donation"] = False
+    elif flags.get("donation") and not (_has_apparel_context(normalized_text) or _has_explicit_donation(normalized_text)):
+        flags["donation"] = False
+    return flags
 
 
 @dataclass(slots=True)
@@ -1247,9 +1352,29 @@ def analyze_semantics(normalize_text_fn: Any, image_path: str | Path, user_text:
             scores["metal"] *= 0.45
 
     intent_flags = _detect_intents(normalized)
+    if intent_flags.get("sanitary"):
+        scores["trash"] += 18.0
+        scores["clothes"] *= 0.04
+        scores["shoes"] *= 0.04
+        scores["paper"] *= 0.25
+        scores["plastic"] *= 0.30
+        if not matched_terms["trash"]:
+            matched_terms["trash"].append("residuo sanitario")
+        if _has_word(normalized, "panal") or _has_word(normalized, "panales"):
+            detected_items["trash"] = "Panal sanitario"
+            matched_terms["trash"].append("panales" if _has_word(normalized, "panales") else "panal")
+        elif intent_flags.get("baby_care"):
+            detected_items["trash"] = "Panales o producto sanitario infantil"
+            matched_terms["trash"].append("contexto bebe/hijo")
+        else:
+            detected_items["trash"] = "Residuo sanitario"
+
     reusable_hint = intent_flags["donation"] or intent_flags["reuse_container"] or any(
         token in normalized for token in ["taza", "mug", "vaso", "jarro", "reutilizable"]
     )
+    if intent_flags.get("sanitary"):
+        reusable_hint = False
+
     if reusable_hint and not any(token in normalized for token in ["vidrio", "plastico", "metal"]):
         scores["plastic"] += 1.0
 
@@ -1275,6 +1400,18 @@ def analyze_semantics(normalize_text_fn: Any, image_path: str | Path, user_text:
     image_scores, image_meta = _score_image_hints(image_path)
     for label, score in image_scores.items():
         scores[label] += score
+
+    beverage_context = _has_any(normalized, BEVERAGE_TERMS)
+    if beverage_context and not any(matched_terms[label] for label in ["paper", "cardboard"]):
+        scores["metal"] += 1.6 + min(image_scores.get("metal", 0.0), 2.0)
+        scores["plastic"] += 1.2 + min(image_scores.get("plastic", 0.0), 1.6)
+        scores["cardboard"] += 0.6
+        matched_terms["metal"].append("bebida en envase")
+        if detected_items["metal"] == DEFAULT_ITEMS["metal"]:
+            detected_items["metal"] = "Envase de bebida"
+        if image_meta["metallic_hint"] > 0.30 or _has_word(normalized, "lata"):
+            scores["metal"] += 4.0
+            detected_items["metal"] = "Lata de bebida"
 
     paper_like_image = image_scores.get("paper", 0.0) >= 2.5 or image_meta["white_ratio"] > 0.34
     paper_like_text = scores["paper"] >= 7.0 or bool(matched_terms["paper"])
@@ -1422,6 +1559,9 @@ def build_modality_evidence(
 
     if image_score > 0:
         image_detail = "La foto aporta color, brillo o textura compatible con la categoria."
+    elif label_key == "trash" and semantic.intent_flags.get("sanitary") and semantic.image_scores.get("paper", 0.0) > 0:
+        image_score = max(image_score, min(float(semantic.image_scores.get("paper", 0.0)), 2.0))
+        image_detail = "La foto sugiere material blanco o absorbente; el texto evita confundirlo con papel reciclable."
     else:
         image_detail = "La foto no aporta una pista visual fuerte; una imagen mas centrada puede ayudar."
 
@@ -1446,6 +1586,8 @@ def build_modality_evidence(
 
 def build_rule_evidence_detail(label_key: str, semantic: SemanticSignals) -> str:
     intents = semantic.intent_flags
+    if intents.get("sanitary"):
+        return "Se bloquea reuso/compost/reciclaje por residuo sanitario."
     if label_key == "battery" or intents.get("hazardous"):
         return "Se aplican reglas de residuo peligroso o manejo especial."
     if intents.get("sharp"):
@@ -1467,7 +1609,7 @@ def build_rule_evidence_detail(label_key: str, semantic: SemanticSignals) -> str
 
 def infer_safety_level(label_key: str, semantic: SemanticSignals) -> str:
     intents = semantic.intent_flags
-    if label_key == "battery" or intents.get("hazardous") or intents.get("sharp"):
+    if label_key == "battery" or intents.get("hazardous") or intents.get("sharp") or intents.get("sanitary"):
         return "alto"
     if label_key in GLASS_LABELS or intents.get("full") or intents.get("dirty") or intents.get("greasy"):
         return "medio"
@@ -1493,6 +1635,8 @@ def build_decision_badges(
         badges.append("No va a reciclaje comun")
     if semantic.reusable_hint:
         badges.append("Reuso primero")
+    if semantic.intent_flags.get("sanitary"):
+        badges.append("Sanitario")
     if semantic.intent_flags.get("compost"):
         badges.append("Compostaje")
     return badges[:5]
@@ -1528,6 +1672,8 @@ def build_quick_verdict(
     label_info = catalog["labels"][label_key]
     if label_key == "battery":
         return f"{detected_item}: llevalo a punto limpio; no lo mezcles con basura comun."
+    if semantic.intent_flags.get("sanitary"):
+        return f"{detected_item}: cierre seguro y basura comun; no va a donar, compost ni reciclaje."
     if safety_level == "alto":
         return f"{detected_item}: maneja con cuidado y separa antes de entregar."
     if semantic.reusable_hint:
@@ -1556,6 +1702,8 @@ def build_material_cues(
         cues.append("condicion: vacio")
     if semantic.intent_flags.get("full"):
         cues.append("condicion: con contenido")
+    if semantic.intent_flags.get("sanitary"):
+        cues.append("condicion: sanitario")
     if label_key in GLASS_LABELS:
         cues.append("material: vidrio")
     return list(dict.fromkeys(cues))[:5]
@@ -1898,6 +2046,26 @@ def build_user_guidance(label_key: str, detected_item: str, semantic: SemanticSi
             "No mezclar textiles sucios con ropa lista para reuso.",
         ]
 
+    if intents.get("sanitary") and label_key == "trash":
+        selected["primary_outcome"] = "Residuo sanitario: proteger a otras personas y evitar contaminar reciclables."
+        selected["preparation_steps"] = [
+            "No lo abras ni lo mezcles con reciclaje.",
+            "Envuelvelo o cierralo en una bolsa resistente.",
+            "Si esta humedo, usa doble bolsa para evitar derrames.",
+            "Depositalo en basura comun o flujo sanitario local.",
+        ]
+        selected["useful_options"] = [
+            "Basura comun cerrada.",
+            "Contenedor sanitario si existe.",
+            "Lavarse las manos despues de manipularlo.",
+        ]
+        selected["avoid"] = [
+            "No va a compost.",
+            "No va a reciclaje seco.",
+            "No debe donarse ni reutilizarse.",
+        ]
+        selected["impact_note"] = "Separar residuos sanitarios evita riesgos de higiene y mantiene limpio el reciclaje."
+
     if intents["reuse_container"] and label_key in {"white-glass", "green-glass", "brown-glass", "plastic", "cardboard"}:
         selected["primary_outcome"] = "EcoSort detecta posibilidad de reuso: prioriza usarlo de nuevo antes de reciclar."
         selected["preparation_steps"] = [
@@ -1995,6 +2163,8 @@ def build_user_guidance(label_key: str, detected_item: str, semantic: SemanticSi
 
 
 def build_smart_reason(label_key: str, detected_item: str, intents: dict[str, bool]) -> str:
+    if intents.get("sanitary"):
+        return "La descripcion menciona un residuo sanitario; EcoSort bloquea donacion, compost y reciclaje seco."
     if intents["resale"] and label_key in {"clothes", "shoes"}:
         return "La descripcion sugiere segunda mano; EcoSort prioriza vender, intercambiar o donar antes de reciclar."
     if intents["donation"] and label_key in {"clothes", "shoes"}:

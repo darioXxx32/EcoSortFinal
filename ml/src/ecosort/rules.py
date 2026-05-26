@@ -32,6 +32,62 @@ def normalize_text(text: str) -> str:
     if has_water and water_purchase_context:
         expansions.append("botella plastica pet envase plastico")
 
+    apparel_terms = [
+        "ropa",
+        "prenda",
+        "camisa",
+        "camiseta",
+        "pantalon",
+        "chaqueta",
+        "uniforme",
+        "zapato",
+        "zapatos",
+        "tenis",
+        "calzado",
+        "medias",
+        "calcetines",
+    ]
+    sanitary_context = any(
+        phrase in text
+        for phrase in [
+            "panal",
+            "panales",
+            "panal usado",
+            "panales usados",
+            "residuo sanitario",
+            "papel higienico usado",
+            "toalla sanitaria",
+            "mascarilla usada",
+        ]
+    )
+    baby_care_context = any(
+        phrase in text
+        for phrase in [
+            "mi hijo",
+            "mi hija",
+            "bebe",
+            "bebes",
+            "nino pequeno",
+            "nina pequena",
+        ]
+    ) and any(
+        phrase in text
+        for phrase in [
+            "no los uso",
+            "no lo uso",
+            "no las uso",
+            "ya no los uso",
+            "ya no lo uso",
+            "estan limpios",
+            "estan sin usar",
+            "limpios",
+            "sin usar",
+        ]
+    )
+    sanitary_context = sanitary_context or baby_care_context
+    if sanitary_context:
+        expansions.append("panal sanitario basura comun usado no reciclable")
+
     apparel_fit_context = any(
         phrase in text
         for phrase in [
@@ -47,8 +103,22 @@ def normalize_text(text: str) -> str:
             "ya no uso",
         ]
     )
-    if apparel_fit_context:
+    if apparel_fit_context and any(term in text for term in apparel_terms):
         expansions.append("ropa prenda calzado zapatos donar buen estado reutilizar")
+
+    beverage_context = any(
+        phrase in text
+        for phrase in [
+            "jugo",
+            "bebida",
+            "gaseosa",
+            "refresco",
+            "soda",
+            "energizante",
+        ]
+    )
+    if beverage_context:
+        expansions.append("bebida envase botella plastico lata aluminio")
 
     if expansions:
         text = f"{text} {' '.join(expansions)}"

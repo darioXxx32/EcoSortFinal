@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image
 
 from .config import DataConfig
-from .rules import build_disposal_response
+from .rules import build_disposal_response, normalize_text
 from .text_features import SimpleTokenizer
 
 
@@ -80,7 +80,8 @@ class EcoSortKerasInferenceEngine:
         return np.expand_dims(array, axis=0)
 
     def predict(self, image_path: str | Path, user_text: str) -> KerasPrediction:
-        token_ids, attention_mask = self.tokenizer.encode(user_text, self.data_config.max_text_length)
+        normalized_text = normalize_text(user_text)
+        token_ids, attention_mask = self.tokenizer.encode(normalized_text, self.data_config.max_text_length)
         inputs = {
             "image": self._load_image(image_path),
             "input_ids": np.asarray([token_ids], dtype=np.int32),

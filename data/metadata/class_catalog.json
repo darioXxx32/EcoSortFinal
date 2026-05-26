@@ -320,6 +320,10 @@
         "desecho comun",
         "envoltura sucia",
         "panal",
+        "panales",
+        "panal de bebe",
+        "papel higienico usado",
+        "toalla sanitaria",
         "mascarilla",
         "icopor",
         "colilla"
@@ -334,6 +338,11 @@
         "no se puede limpiar",
         "es basura comun",
         "es sanitario",
+        "es residuo sanitario",
+        "panal usado",
+        "panales usados",
+        "mi hijo no los uso",
+        "estan limpios pero son panales",
         "es de un solo uso"
       ]
     },
@@ -374,6 +383,6 @@
     "chemical": ["producto de limpieza", "quimico", "detergente", "cloro"],
     "broken": ["roto", "quebrado", "partido"],
     "reusable": ["todavia sirve", "reusable", "se puede donar", "utilizable"],
-    "sanitary": ["panal", "mascarilla", "colilla", "papel higienico usado", "residuo sanitario"]
+    "sanitary": ["panal", "panales", "panal usado", "panales usados", "panal de bebe", "mascarilla", "colilla", "papel higienico usado", "toalla sanitaria", "residuo sanitario"]
   }
 }

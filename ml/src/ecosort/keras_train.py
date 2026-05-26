@@ -11,6 +11,7 @@ import pandas as pd
 
 from .catalog import get_index_to_label, get_label_names, get_label_to_index
 from .config import ANNOTATIONS_ROOT, MODELS_ROOT, DataConfig
+from .rules import normalize_text
 from .text_features import SimpleTokenizer
 
 
@@ -38,7 +39,7 @@ def require_tensorflow() -> Any:
 
 
 def encode_texts(tokenizer: SimpleTokenizer, texts: list[str], max_length: int) -> tuple[np.ndarray, np.ndarray]:
-    encoded = [tokenizer.encode(text, max_length) for text in texts]
+    encoded = [tokenizer.encode(normalize_text(str(text)), max_length) for text in texts]
     token_ids = np.asarray([item[0] for item in encoded], dtype=np.int32)
     masks = np.asarray([item[1] for item in encoded], dtype=np.int32)
     return token_ids, masks
@@ -170,7 +171,10 @@ def train(args: argparse.Namespace) -> None:
     if args.resume and tokenizer_path.exists():
         tokenizer = SimpleTokenizer.load(tokenizer_path)
     else:
-        tokenizer = SimpleTokenizer().fit(bundle.train["text"].tolist(), max_vocab_size=data_config.max_vocab_size)
+        tokenizer = SimpleTokenizer().fit(
+            [normalize_text(str(text)) for text in bundle.train["text"].tolist()],
+            max_vocab_size=data_config.max_vocab_size,
+        )
         tokenizer.save(tokenizer_path)
 
     train_ds = build_tf_dataset(tf, bundle.train, tokenizer, data_config, args.batch_size, training=True)
