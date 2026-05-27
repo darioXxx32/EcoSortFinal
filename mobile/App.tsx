@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 
 import { colors, radii, spacing } from "./src/theme/tokens";
@@ -9,6 +10,8 @@ import TipsScreen from "./src/screens/TipsScreen";
 import FunFactsScreen from "./src/screens/FunFactsScreen";
 
 type Tab = "home" | "tips" | "facts";
+
+const APP_LOGO = require("./assets/icon.png");
 
 const TAB_ICONS: Record<Tab, string> = {
   home: "AI",
@@ -20,6 +23,47 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [lastPrediction, setLastPrediction] = useState<PredictionResponse | null>(null);
   const [lastNote, setLastNote] = useState("");
+  const [showIntro, setShowIntro] = useState(true);
+  const introOpacity = useRef(new Animated.Value(1)).current;
+  const logoScale = useRef(new Animated.Value(0.78)).current;
+  const logoLift = useRef(new Animated.Value(24)).current;
+  const progressScale = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(logoScale, {
+          toValue: 1,
+          damping: 8,
+          stiffness: 150,
+          mass: 0.75,
+          useNativeDriver: true
+        }),
+        Animated.spring(logoLift, {
+          toValue: 0,
+          damping: 8,
+          stiffness: 150,
+          mass: 0.75,
+          useNativeDriver: true
+        })
+      ]),
+      Animated.timing(progressScale, {
+        toValue: 1,
+        duration: 760,
+        useNativeDriver: true
+      })
+    ]).start();
+
+    const timer = setTimeout(() => {
+      Animated.timing(introOpacity, {
+        toValue: 0,
+        duration: 320,
+        useNativeDriver: true
+      }).start(() => setShowIntro(false));
+    }, 1700);
+
+    return () => clearTimeout(timer);
+  }, [introOpacity, logoLift, logoScale, progressScale]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "home", label: "Escanear" },
@@ -59,6 +103,20 @@ export default function App() {
           );
         })}
       </View>
+      {showIntro ? (
+        <Animated.View pointerEvents="none" style={[styles.splashLayer, { opacity: introOpacity }]}>
+          <LinearGradient colors={["#F7FAF3", "#DFF5F3", "#FFFFFF"]} style={styles.splashGradient}>
+            <Animated.View style={[styles.splashLogo, { transform: [{ translateY: logoLift }, { scale: logoScale }] }]}>
+              <Image source={APP_LOGO} style={styles.splashLogoImage} />
+            </Animated.View>
+            <Text style={styles.splashName}>EcoSort</Text>
+            <Text style={styles.splashTagline}>Escanea. Decide. Recicla.</Text>
+            <View style={styles.splashProgressTrack}>
+              <Animated.View style={[styles.splashProgress, { transform: [{ scaleX: progressScale }] }]} />
+            </View>
+          </LinearGradient>
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
@@ -102,5 +160,61 @@ const styles = StyleSheet.create({
   },
   tabLabelActive: {
     color: colors.moss,
+  },
+  splashLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+  },
+  splashGradient: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+  },
+  splashLogo: {
+    width: 102,
+    height: 102,
+    borderRadius: 24,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  splashLogoImage: {
+    width: "100%",
+    height: "100%",
+  },
+  splashName: {
+    color: colors.ink,
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: "900",
+    marginTop: spacing.sm,
+  },
+  splashTagline: {
+    color: colors.moss,
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "800",
+  },
+  splashProgressTrack: {
+    width: 140,
+    height: 7,
+    borderRadius: 999,
+    overflow: "hidden",
+    backgroundColor: "#CDE4EA",
+    marginTop: spacing.md,
+  },
+  splashProgress: {
+    width: 140,
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: colors.forest,
   },
 });

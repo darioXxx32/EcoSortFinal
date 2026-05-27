@@ -29,9 +29,9 @@ import {
   type PredictionResponse,
   type TaxonomyResponse
 } from "../api/client";
-import { colors, radii, spacing } from "../theme/tokens";
+import { colors, spacing } from "../theme/tokens";
 import { getRandomFact } from "../data/funFacts";
-import { getSearchSuggestions, getSuggestionsForLabel, getYouTubeSearchUrl } from "../data/youtubeQueries";
+import { getSuggestionsForLabel, getYouTubeSearchUrl } from "../data/youtubeQueries";
 
 type Props = {
   onPrediction: (result: PredictionResponse, note: string) => void;
@@ -41,29 +41,6 @@ const titleFont = Platform.select({ ios: "Georgia", android: "serif", default: u
 const LAN_FALLBACK_HOSTS = ["192.168.1.14", "172.23.201.242"];
 const COMMON_SERVER_OCTETS = [242, 14, 1, 2, 10, 20, 50, 100, 101, 102, 150, 200, 254];
 const DISCOVERY_BATCH_SIZE = 28;
-
-const QUICK_NOTES = [
-  { label: "PET limpio", text: "Botella PET limpia y vacia" },
-  { label: "Jugo en lata", text: "Jugo en lata de aluminio recien comprado" },
-  { label: "Panal", text: "Panales de mi hijo que ya no uso" },
-  { label: "Composta", text: "Cascara de fruta para compost" },
-  { label: "Caja grasa", text: "Caja de carton con grasa y restos de comida" },
-  { label: "Pila", text: "Pila usada de control remoto" },
-  { label: "Control viejo", text: "Son de un control antiguo" },
-  { label: "Ropa", text: "Ropa en buen estado para donar" },
-  { label: "Vidrio roto", text: "Frasco de vidrio roto y vacio" },
-  { label: "Tetrapak", text: "Envase tetrapak de jugo ya vacio" },
-  { label: "Aceite", text: "Aceite de cocina usado en una botella cerrada" },
-  { label: "Medicamento", text: "Medicamentos vencidos en su caja" },
-  { label: "Papel mojado", text: "Papel mojado con restos de comida" },
-];
-
-const CATEGORY_STORIES = [
-  { label: "Reciclaje", detail: "material limpio y seco", tone: "#DCEEE5" },
-  { label: "Composta", detail: "organicos aprovechables", tone: "#F1E9C8" },
-  { label: "Punto limpio", detail: "pilas y quimicos", tone: "#FFE7D6" },
-  { label: "Reuso", detail: "donar o reparar", tone: "#E7EEFF" },
-];
 
 const EDUCATION_FACTS: Record<string, string> = {
   biological: "Si es compostable, retira plasticos y mezcla restos humedos con material seco como hojas.",
@@ -319,7 +296,7 @@ async function readDeviceIp(): Promise<string | null> {
 export default function HomeScreen({ onPrediction }: Props) {
   const [apiUrl, setApiUrl] = useState(inferApiUrl);
   const [serverInput, setServerInput] = useState(() => inferApiUrl());
-  const [note, setNote] = useState("Botella PET limpia y vacia");
+  const [note, setNote] = useState("");
   const [asset, setAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [taxonomy, setTaxonomy] = useState<TaxonomyResponse | null>(null);
@@ -335,15 +312,15 @@ export default function HomeScreen({ onPrediction }: Props) {
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const scanAnim = useRef(new Animated.Value(0)).current;
   const resultAnim = useRef(new Animated.Value(0)).current;
+  const connectedUrlRef = useRef<string | null>(null);
+  const syncRunRef = useRef(0);
   const pulseScale = pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
   const scanTranslateY = scanAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 250] });
   const resultScale = resultAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] });
   const resultLift = resultAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
 
-  const overview = taxonomy?.overview;
   const recommendation = result?.recommendation;
   const activeMode = formatModeLabel(health?.mode ?? result?.mode ?? "");
-  const modelEpochs = health?.model?.epochs_completed;
   const modelWarning = health && !(health.mode ?? "").includes("keras")
     ? (health.model?.hint ?? "Motor semantico activo: inicia con scripts/start_api.ps1 para usar best_model.keras.")
     : "";
@@ -354,16 +331,10 @@ export default function HomeScreen({ onPrediction }: Props) {
   const decisionBadges = recommendation?.decision_badges ?? [];
   const materialCues = recommendation?.material_cues ?? [];
   const youtubeSuggestions = result ? getSuggestionsForLabel(result.label_key) : [];
-  const searchSuggestions = useMemo(() => getSearchSuggestions(note), [note]);
   const connectionCandidates = useMemo(() => buildApiCandidates(serverInput, deviceIp).slice(0, 6), [serverInput, deviceIp]);
   const primaryLearningQuery = youtubeSuggestions[0]?.query ?? webQueryFor(result?.label_key ?? "reciclaje", recommendation);
   const educationFact = result ? educationFactFor(result.label_key) : funFact;
   const encouragement = result ? encouragementFor(result.label_key) : "Escanea un residuo y EcoSort te dira la accion correcta.";
-  const workflowSteps = [
-    { label: "Foto", detail: asset ? "lista" : "pendiente", active: Boolean(asset) },
-    { label: "Texto", detail: note.trim().length >= 3 ? "contexto" : "falta pista", active: note.trim().length >= 3 },
-    { label: "Plan", detail: result ? "generado" : "por crear", active: Boolean(result) },
-  ];
   const extraActions = result && recommendation ? actionIdeasFor(result.label_key, recommendation, primaryLearningQuery) : [];
   const modalityTiles = [
     { label: "Vision", detail: asset ? "imagen recibida" : "sin foto", active: Boolean(asset) },
@@ -413,35 +384,49 @@ export default function HomeScreen({ onPrediction }: Props) {
   }, [result, resultAnim]);
 
   async function syncBackend(nextApiUrl: string, showStatus = true): Promise<string | null> {
+    const requestedUrl = normalizeApiUrl(nextApiUrl);
+    const lockedUrl = connectedUrlRef.current;
+    if (health && lockedUrl && requestedUrl === lockedUrl) {
+      setConnectionMessage(`Conectado: ${formatModeLabel(health.mode)} en ${lockedUrl}.`);
+      return lockedUrl;
+    }
+
+    const runId = ++syncRunRef.current;
     const activeDeviceIp = deviceIp ?? await readDeviceIp();
     if (activeDeviceIp && activeDeviceIp !== deviceIp) setDeviceIp(activeDeviceIp);
-    const candidates = buildApiCandidates(nextApiUrl, activeDeviceIp);
+    const candidates = buildApiCandidates(requestedUrl, activeDeviceIp);
     if (showStatus) setConnectionMessage("Buscando backend EcoSort en la red local...");
 
+    const applyConnection = (candidate: string, nextHealth: HealthResponse, nextTaxonomy: TaxonomyResponse, progress: string) => {
+      if (syncRunRef.current !== runId) return;
+      connectedUrlRef.current = candidate;
+      setApiUrl(candidate);
+      setServerInput(candidate);
+      setHealth(nextHealth);
+      setTaxonomy(nextTaxonomy);
+      setShowConnectionDetails(false);
+      setDiscoveryProgress(progress);
+      setConnectionMessage(`Conectado: ${formatModeLabel(nextHealth.mode)} en ${candidate}.`);
+    };
+
     for (const candidate of candidates) {
+      if (syncRunRef.current !== runId) return connectedUrlRef.current;
+      if (connectedUrlRef.current && candidate !== requestedUrl) return connectedUrlRef.current;
       try {
         if (showStatus) setConnectionMessage(`Probando ${candidate}...`);
         const [nextHealth, nextTaxonomy] = await Promise.all([checkHealth(candidate, 1200), fetchTaxonomy(candidate, 1600)]);
-        setApiUrl(candidate);
-        setServerInput(candidate);
-        setHealth(nextHealth);
-        setTaxonomy(nextTaxonomy);
-        setShowConnectionDetails(false);
-        setDiscoveryProgress(activeDeviceIp ? `Red detectada: ${activeDeviceIp}` : "");
-        setConnectionMessage(
-          `Conectado: ${formatModeLabel(nextHealth.mode)}${
-            nextHealth.model?.epochs_completed ? `, ${nextHealth.model.epochs_completed} epocas` : ""
-          } en ${candidate}.`
-        );
+        applyConnection(candidate, nextHealth, nextTaxonomy, activeDeviceIp ? `Red detectada: ${activeDeviceIp}` : "");
         return candidate;
       } catch {
       }
     }
 
-    const subnetCandidates = buildSubnetCandidates(activeDeviceIp, nextApiUrl).filter((candidate) => !candidates.includes(candidate));
+    const subnetCandidates = buildSubnetCandidates(activeDeviceIp, requestedUrl).filter((candidate) => !candidates.includes(candidate));
     const prefix = subnetPrefix(activeDeviceIp);
     if (subnetCandidates.length && prefix) {
       for (let index = 0; index < subnetCandidates.length; index += DISCOVERY_BATCH_SIZE) {
+        if (syncRunRef.current !== runId) return connectedUrlRef.current;
+        if (connectedUrlRef.current && requestedUrl === connectedUrlRef.current) return connectedUrlRef.current;
         const batch = subnetCandidates.slice(index, index + DISCOVERY_BATCH_SIZE);
         const checked = Math.min(index + batch.length, subnetCandidates.length);
         if (showStatus) {
@@ -459,17 +444,7 @@ export default function HomeScreen({ onPrediction }: Props) {
         if (found) {
           try {
             const nextTaxonomy = await fetchTaxonomy(found.candidate, 2400);
-            setApiUrl(found.candidate);
-            setServerInput(found.candidate);
-            setHealth(found.nextHealth);
-            setTaxonomy(nextTaxonomy);
-            setShowConnectionDetails(false);
-            setDiscoveryProgress(`Servidor encontrado desde ${activeDeviceIp}`);
-            setConnectionMessage(
-              `Conectado: ${formatModeLabel(found.nextHealth.mode)}${
-                found.nextHealth.model?.epochs_completed ? `, ${found.nextHealth.model.epochs_completed} epocas` : ""
-              } en ${found.candidate}.`
-            );
+            applyConnection(found.candidate, found.nextHealth, nextTaxonomy, `Servidor encontrado desde ${activeDeviceIp}`);
             return found.candidate;
           } catch {
           }
@@ -477,6 +452,11 @@ export default function HomeScreen({ onPrediction }: Props) {
       }
     }
 
+    if (connectedUrlRef.current) {
+      setConnectionMessage(`Conectado: ${formatModeLabel(health?.mode ?? "")} en ${connectedUrlRef.current}.`);
+      return connectedUrlRef.current;
+    }
+    if (syncRunRef.current !== runId) return connectedUrlRef.current;
     setHealth(null);
     setTaxonomy(null);
     setShowConnectionDetails(true);
@@ -497,7 +477,7 @@ export default function HomeScreen({ onPrediction }: Props) {
     setResult(null);
     setAsset(null);
     setErrorMessage("");
-    setNote("Botella PET limpia y vacia");
+    setNote("");
   }
 
   async function openActionIdea(item: ActionIdea) {
@@ -579,56 +559,36 @@ export default function HomeScreen({ onPrediction }: Props) {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <LinearGradient colors={["#123B2C", "#2E6B4D"]} style={styles.heroPanel}>
-          <View style={styles.heroTop}>
-            <View style={styles.headerCopy}>
-              <Text style={styles.brand}>{taxonomy?.app.name ?? "EcoSort"}</Text>
-              <Text style={styles.title}>Escanea. Describe. Actua.</Text>
-              <Text style={styles.subtitle}>Imagen + texto + reglas ambientales para decidir que hacer con cada residuo.</Text>
+        <LinearGradient colors={["#F8FAF6", "#EAF8F8", "#FFFFFF"]} style={styles.heroPanel}>
+          <Text style={styles.brand}>{taxonomy?.app.name ?? "EcoSort"}</Text>
+          <Text style={styles.title}>{result ? "Resultado claro" : "Encuentra donde va rapido"}</Text>
+          <Text style={styles.subtitle}>
+            Foto + descripcion. EcoSort te dice si reciclar, compostar, donar o desechar con seguridad.
+          </Text>
+
+          <View style={styles.fastSearchCard}>
+            <View style={styles.fastSearchCopy}>
+              <Text style={styles.fastSearchLabel}>Residuo a revisar</Text>
+              <Text style={styles.fastSearchText} numberOfLines={2}>
+                {recommendation?.detected_item ?? (note.trim() || "Ej. pilas AA, panal, carton con grasa")}
+              </Text>
             </View>
-            <Animated.View style={[styles.aiBadge, { transform: [{ scale: pulseScale }] }]}>
-              <Text style={styles.aiBadgeValue}>AI</Text>
-              <Text style={styles.aiBadgeLabel}>multi</Text>
-            </Animated.View>
+            <View style={styles.fastActions}>
+              <Pressable style={styles.fastActionButton} onPress={() => handlePick("camera")}>
+                <Text style={styles.fastActionText}>CAM</Text>
+              </Pressable>
+              <Pressable style={styles.fastActionButtonLight} onPress={() => handlePick("gallery")}>
+                <Text style={styles.fastActionTextDark}>IMG</Text>
+              </Pressable>
+            </View>
           </View>
-          <View style={styles.heroMeter}>
-            <Metric label="Vision" value={asset ? "activa" : "foto"} dark />
-            <Metric label="Texto" value={note.trim().length >= 3 ? "activo" : "pista"} dark />
-            <Metric label="Motor" value={activeMode} dark />
+
+          <View style={styles.compactStatusRow}>
+            <Metric label="Vision" value={asset ? "activa" : "foto"} />
+            <Metric label="Texto" value={note.trim().length >= 3 ? "activo" : "pista"} />
+            <Metric label="IA" value={activeMode} />
           </View>
         </LinearGradient>
-
-        <View style={styles.workflowPanel}>
-          {workflowSteps.map((step, index) => (
-            <View key={step.label} style={styles.workflowItem}>
-              <View style={[styles.workflowDot, step.active && styles.workflowDotActive]}>
-                <Text style={[styles.workflowNumber, step.active && styles.workflowNumberActive]}>{index + 1}</Text>
-              </View>
-              <View style={styles.workflowCopy}>
-                <Text style={styles.workflowLabel}>{step.label}</Text>
-                <Text style={styles.workflowDetail}>{step.detail}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.categoryRail}>
-          {CATEGORY_STORIES.map((item) => (
-            <View key={item.label} style={[styles.storyCard, { backgroundColor: item.tone }]}>
-              <Text style={styles.storyLabel}>{item.label}</Text>
-              <Text style={styles.storyDetail}>{item.detail}</Text>
-            </View>
-          ))}
-        </View>
-
-        <Pressable style={styles.factBanner} onPress={() => Linking.openURL(getYouTubeSearchUrl(result ? `${recommendation?.label_display} reciclaje` : "datos curiosos reciclaje"))}>
-          <Text style={styles.factIcon}>i</Text>
-          <View style={styles.factCopy}>
-            <Text style={styles.factLabel}>{result ? "Aprende de este caso" : "Dato curioso"}</Text>
-            <Text style={styles.factText}>{educationFact}</Text>
-          </View>
-          <Text style={styles.factAction}>Ver</Text>
-        </Pressable>
 
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
@@ -726,15 +686,8 @@ export default function HomeScreen({ onPrediction }: Props) {
           </View>
 
           <View style={styles.textPanel}>
-            <Text style={styles.fieldLabel}>Cuentalo como usuario real</Text>
-            <Text style={styles.fieldHint}>Ejemplo: material, uso anterior, si esta limpio, si es sanitario o si puede donarse.</Text>
-            <View style={styles.chipRow}>
-              {QUICK_NOTES.map((item) => (
-                <Pressable key={item.label} style={styles.noteChip} onPress={() => setNote(item.text)}>
-                  <Text style={styles.noteChipText}>{item.label}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <Text style={styles.fieldLabel}>Breve descripcion</Text>
+            <Text style={styles.fieldHint}>Escribe una pista corta: material, estado o uso anterior.</Text>
             <TextInput
               style={styles.textArea}
               value={note}
@@ -743,20 +696,9 @@ export default function HomeScreen({ onPrediction }: Props) {
                 setResult(null);
               }}
               multiline
-              placeholder="Ej. jugo en lata, panales usados, cascara para composta..."
+              placeholder="Ej. pila usada de control remoto"
               placeholderTextColor={colors.muted}
             />
-            {searchSuggestions.length > 0 && (
-              <View style={styles.learnBox}>
-                <Text style={styles.learnTitle}>Contenido sugerido por tu texto</Text>
-                {searchSuggestions.slice(0, 3).map((suggestion) => (
-                  <Pressable key={suggestion.title} style={styles.learnRow} onPress={() => Linking.openURL(getYouTubeSearchUrl(suggestion.query))}>
-                    <Text style={styles.learnText}>{suggestion.title}</Text>
-                    <Text style={styles.learnAction}>YouTube</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
           </View>
 
           <View style={styles.multimodalPanel}>
@@ -793,6 +735,18 @@ export default function HomeScreen({ onPrediction }: Props) {
 
           {result && recommendation ? (
             <View style={styles.resultStack}>
+              <View style={styles.sortingInfoCard}>
+                {asset ? <Image source={{ uri: asset.uri }} style={styles.sortingInfoImage} /> : null}
+                <View style={styles.sortingInfoBody}>
+                  <Text style={styles.sortingInfoKicker}>Guia rapida</Text>
+                  <Text style={styles.sortingInfoTitle}>{recommendation.detected_item ?? recommendation.label_display}</Text>
+                  <Text style={styles.sortingInfoRoute}>{recommendation.bin_color}</Text>
+                  <Text style={styles.sortingInfoText}>
+                    {recommendation.primary_outcome ?? recommendation.quick_verdict ?? recommendation.recyclable_condition}
+                  </Text>
+                </View>
+              </View>
+
               <Animated.View style={[styles.rewardPanel, { opacity: resultAnim, transform: [{ scale: resultScale }] }]}>
                 <View style={styles.rewardOrb}>
                   <Text style={styles.rewardOrbText}>OK</Text>
@@ -953,12 +907,6 @@ export default function HomeScreen({ onPrediction }: Props) {
           )}
         </View>
 
-        <View style={styles.coveragePanel}>
-          <Metric label="Clases" value={`${overview?.base_label_count ?? 12}`} />
-          <Metric label="Objetos" value={`${overview?.supported_item_count ?? 562}`} />
-          <Metric label="Epocas" value={`${modelEpochs ?? "-"}`} />
-          <Metric label="Modo" value={activeMode} />
-        </View>
       </ScrollView>
     </View>
   );
@@ -984,35 +932,26 @@ function Metric({ label, value, dark = false }: { label: string; value: string; 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F4F7F1" },
   scroll: { paddingTop: 48, paddingBottom: spacing.xxxl, paddingHorizontal: spacing.md, gap: spacing.md },
-  heroPanel: { borderRadius: 8, padding: spacing.md, gap: spacing.md },
+  heroPanel: { borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.lg, gap: spacing.md, overflow: "hidden" },
   heroTop: { flexDirection: "row", gap: spacing.md, alignItems: "flex-start" },
   headerCopy: { flex: 1, gap: 8 },
-  brand: { color: "#CFE8D5", fontSize: 12, fontWeight: "900", letterSpacing: 1.2, textTransform: "uppercase" },
-  title: { color: colors.white, fontSize: 34, lineHeight: 38, fontWeight: "900", fontFamily: titleFont },
-  subtitle: { color: "#E4F1E6", fontSize: 15, lineHeight: 22 },
+  brand: { color: colors.moss, fontSize: 12, fontWeight: "900", letterSpacing: 1.2, textTransform: "uppercase" },
+  title: { color: colors.ink, fontSize: 36, lineHeight: 40, fontWeight: "900", fontFamily: titleFont },
+  subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22, fontWeight: "700" },
   aiBadge: { width: 78, minHeight: 78, borderRadius: 8, backgroundColor: "#F5F0D8", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#DDEBCF" },
   aiBadgeValue: { color: colors.forest, fontSize: 24, fontWeight: "900" },
   aiBadgeLabel: { color: colors.moss, fontSize: 11, fontWeight: "900" },
   heroMeter: { flexDirection: "row", gap: spacing.sm },
-  workflowPanel: { flexDirection: "row", gap: spacing.sm },
-  workflowItem: { flex: 1, minHeight: 70, backgroundColor: colors.white, borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.sm, flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  workflowDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#EEF0EA", alignItems: "center", justifyContent: "center" },
-  workflowDotActive: { backgroundColor: colors.forest },
-  workflowNumber: { color: colors.muted, fontWeight: "900", fontSize: 12 },
-  workflowNumberActive: { color: colors.white },
-  workflowCopy: { flex: 1 },
-  workflowLabel: { color: colors.ink, fontWeight: "900", fontSize: 13 },
-  workflowDetail: { color: colors.muted, fontWeight: "700", fontSize: 11 },
-  categoryRail: { flexDirection: "row", gap: spacing.sm },
-  storyCard: { flex: 1, minHeight: 86, borderRadius: 8, padding: spacing.sm, borderWidth: 1, borderColor: colors.line },
-  storyLabel: { color: colors.ink, fontWeight: "900", fontSize: 13 },
-  storyDetail: { color: colors.muted, fontWeight: "700", fontSize: 11, lineHeight: 15, marginTop: 5 },
-  factBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#FFF8E7", borderWidth: 1, borderColor: "#EED994", borderRadius: 8, padding: spacing.sm },
-  factIcon: { width: 28, height: 28, borderRadius: 14, textAlign: "center", lineHeight: 28, backgroundColor: "#F0D987", color: "#6C4C00", fontWeight: "900" },
-  factCopy: { flex: 1, gap: 3 },
-  factLabel: { color: "#7A5A0A", fontWeight: "900", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.7 },
-  factText: { color: colors.ink, fontSize: 13, lineHeight: 18, fontWeight: "700" },
-  factAction: { color: "#7A5A0A", fontWeight: "900", fontSize: 12 },
+  fastSearchCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.white, borderRadius: 8, borderWidth: 1, borderColor: "#CDE4EA", padding: spacing.sm },
+  fastSearchCopy: { flex: 1, minWidth: 0, gap: 3 },
+  fastSearchLabel: { color: colors.muted, fontSize: 11, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.7 },
+  fastSearchText: { color: colors.ink, fontSize: 17, lineHeight: 22, fontWeight: "900" },
+  fastActions: { flexDirection: "row", gap: 7 },
+  fastActionButton: { width: 45, height: 45, borderRadius: 8, backgroundColor: colors.forest, alignItems: "center", justifyContent: "center" },
+  fastActionButtonLight: { width: 45, height: 45, borderRadius: 8, backgroundColor: "#EDF6F8", borderWidth: 1, borderColor: "#CDE4EA", alignItems: "center", justifyContent: "center" },
+  fastActionText: { color: colors.white, fontSize: 11, fontWeight: "900" },
+  fastActionTextDark: { color: "#24556B", fontSize: 11, fontWeight: "900" },
+  compactStatusRow: { flexDirection: "row", gap: spacing.sm },
   panel: { backgroundColor: colors.white, borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.md, gap: spacing.md },
   panelHeader: { flexDirection: "row", justifyContent: "space-between", gap: spacing.sm, alignItems: "flex-start" },
   eyebrow: { color: colors.moss, fontWeight: "900", fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase" },
@@ -1059,8 +998,6 @@ const styles = StyleSheet.create({
   fieldLabel: { color: colors.ink, fontWeight: "900", fontSize: 16 },
   fieldHint: { color: colors.muted, lineHeight: 19, fontWeight: "600" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  noteChip: { borderRadius: 999, backgroundColor: "#E7F2EC", borderWidth: 1, borderColor: "#D1E4D8", paddingHorizontal: 11, paddingVertical: 8 },
-  noteChipText: { color: colors.forest, fontWeight: "800", fontSize: 12 },
   textArea: { minHeight: 104, textAlignVertical: "top", backgroundColor: "#FBFCFA", borderRadius: 8, borderWidth: 1, borderColor: colors.line, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: 16, color: colors.ink },
   multimodalPanel: { flexDirection: "row", gap: spacing.sm },
   modalityTile: { flex: 1, minHeight: 92, borderRadius: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: "#F8FAF6", padding: spacing.sm, justifyContent: "space-between" },
@@ -1075,6 +1012,13 @@ const styles = StyleSheet.create({
   analyzeButtonText: { color: colors.white, fontWeight: "900", fontSize: 16 },
   errorText: { color: colors.danger, fontWeight: "800" },
   resultStack: { gap: spacing.sm },
+  sortingInfoCard: { backgroundColor: colors.white, borderRadius: 8, borderWidth: 2, borderColor: "#2AA6A0", overflow: "hidden" },
+  sortingInfoImage: { width: "100%", height: 190, backgroundColor: colors.mist },
+  sortingInfoBody: { padding: spacing.md, gap: 6 },
+  sortingInfoKicker: { color: colors.moss, fontSize: 11, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.8 },
+  sortingInfoTitle: { color: colors.ink, fontSize: 28, lineHeight: 33, fontWeight: "900", fontFamily: titleFont },
+  sortingInfoRoute: { color: colors.ink, fontSize: 18, lineHeight: 23, fontWeight: "900" },
+  sortingInfoText: { color: colors.muted, fontSize: 14, lineHeight: 21, fontWeight: "700" },
   rewardPanel: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#123B2C", borderRadius: 8, padding: spacing.md },
   rewardOrb: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#CFE8D5", alignItems: "center", justifyContent: "center" },
   rewardOrbText: { color: colors.forest, fontWeight: "900", fontSize: 13 },
@@ -1145,5 +1089,4 @@ const styles = StyleSheet.create({
   altPanel: { gap: spacing.sm },
   emptyState: { backgroundColor: "#FAFBF8", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.lg, gap: spacing.sm },
   emptyTitle: { color: colors.ink, fontSize: 22, lineHeight: 27, fontWeight: "900", fontFamily: titleFont },
-  coveragePanel: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, paddingBottom: spacing.lg },
 });
