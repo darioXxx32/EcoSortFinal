@@ -437,6 +437,14 @@ ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("aa", 7.0, "Pila AA"),
         ("aaa", 7.0, "Pila AAA"),
         ("control remoto", 8.0, "Pila de control remoto"),
+        ("control antiguo", 10.0, "Pilas de control antiguo"),
+        ("control viejo", 10.0, "Pilas de control antiguo"),
+        ("control de tv", 9.5, "Pilas de control remoto"),
+        ("control del televisor", 9.5, "Pilas de control remoto"),
+        ("mando remoto", 9.5, "Pilas de mando remoto"),
+        ("mando antiguo", 9.5, "Pilas de mando remoto"),
+        ("de un control", 8.5, "Pilas de control antiguo"),
+        ("del control", 8.5, "Pilas de control remoto"),
         ("bateria de celular", 8.5, "Bateria de celular"),
         ("bateria laptop", 8.5, "Bateria de laptop"),
         ("bateria de laptop", 8.5, "Bateria de laptop"),
@@ -703,6 +711,11 @@ EXTRA_ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("pila grande", 9.0, "Pila grande"),
         ("pila alcalina", 9.0, "Pila alcalina"),
         ("bateria de control", 9.0, "Pila de control remoto"),
+        ("pilas de control", 10.0, "Pilas de control remoto"),
+        ("pilas del control", 10.0, "Pilas de control remoto"),
+        ("pilas de un control antiguo", 10.0, "Pilas de control antiguo"),
+        ("baterias de control", 10.0, "Pilas de control remoto"),
+        ("son de un control antiguo", 10.0, "Pilas de control antiguo"),
         ("bateria de juguete", 9.0, "Pila de juguete"),
         ("bateria hinchada", 10.0, "Bateria danada"),
         ("bateria dañada", 10.0, "Bateria danada"),
@@ -1065,6 +1078,10 @@ CONTEXT_BOOSTS: dict[str, list[tuple[list[str], float, str]]] = {
         (["bateria", "celular"], 9.0, "Bateria de celular"),
         (["bateria", "hinchada"], 10.0, "Bateria danada"),
         (["pila", "control"], 9.0, "Pila de control remoto"),
+        (["control", "antiguo"], 12.0, "Pilas de control antiguo"),
+        (["control", "viejo"], 12.0, "Pilas de control antiguo"),
+        (["control", "remoto"], 10.0, "Pila de control remoto"),
+        (["mando", "remoto"], 10.0, "Pilas de mando remoto"),
     ],
     "biological": [
         (["restos", "comida"], 10.0, "Restos de comida"),
@@ -1097,7 +1114,7 @@ MATERIAL_TERMS = {
     "plastic": {"plastico", "plastica", "pet", "botella", "envase", "bolsa", "tupper", "blister"},
     "metal": {"metal", "metalico", "metalica", "lata", "aluminio", "aerosol", "clavo", "tornillo", "llave"},
     "glass": {"vidrio", "frasco", "cristal", "botella"},
-    "battery": {"bateria", "pila", "power", "bank", "litio"},
+    "battery": {"bateria", "baterias", "pila", "pilas", "power", "bank", "litio", "control", "mando"},
 }
 
 APPAREL_TERMS = {
@@ -1404,6 +1421,16 @@ def analyze_semantics(normalize_text_fn: Any, image_path: str | Path, user_text:
             matched_terms["trash"].append("contexto bebe/hijo")
         else:
             detected_items["trash"] = "Residuo sanitario"
+
+    if matched_terms["battery"]:
+        scores["battery"] += 16.0
+        scores["paper"] *= 0.08
+        scores["cardboard"] *= 0.08
+        scores["clothes"] *= 0.20
+        scores["shoes"] *= 0.20
+        scores["plastic"] *= 0.25
+        if detected_items["battery"] == DEFAULT_ITEMS["battery"]:
+            detected_items["battery"] = "Pilas o baterias"
 
     if intent_flags.get("compost") and (
         matched_terms["biological"] or any(token in normalized for token in ["cena", "almuerzo", "comida", "sobras", "restos"])

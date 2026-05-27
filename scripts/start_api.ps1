@@ -5,12 +5,20 @@ $kerasPython = Join-Path $projectRoot ".\ml\.venv-keras\Scripts\python.exe"
 $backendPython = Join-Path $projectRoot ".\backend\.venv\Scripts\python.exe"
 $pythonExe = if (Test-Path $kerasPython) { $kerasPython } else { $backendPython }
 
-$existing = Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
-  Where-Object { $_.CommandLine -like "*uvicorn app.main:app*" -and $_.CommandLine -like "*8000*" }
+$existing = @(
+  Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
+    Where-Object { $_.CommandLine -like "*uvicorn*" -and $_.CommandLine -like "*8000*" }
+)
 
-if ($existing) {
+$portOwners = @(
+  Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue |
+    Select-Object -ExpandProperty OwningProcess -Unique
+)
+
+$processIds = @($existing.ProcessId + $portOwners) | Where-Object { $_ } | Select-Object -Unique
+if ($processIds) {
   Write-Host "EcoSort API ya estaba corriendo. Cerrando instancia anterior para recargar cambios..."
-  $existing | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+  $processIds | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
   Start-Sleep -Seconds 2
 }
 
@@ -35,4 +43,4 @@ Write-Host ""
 Write-Host "Si el celular no conecta, permite Python/Uvicorn en Firewall de Windows para redes privadas."
 Write-Host ""
 
-& $pythonExe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+& $pythonExe -m uvicorn app.main:app --host 0.0.0.0 --port 8000

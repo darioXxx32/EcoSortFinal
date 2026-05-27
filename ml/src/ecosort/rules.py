@@ -120,6 +120,23 @@ def normalize_text(text: str) -> str:
     if beverage_context:
         expansions.append("bebida envase botella plastico lata aluminio")
 
+    remote_control_context = any(
+        phrase in text
+        for phrase in [
+            "control remoto",
+            "control antiguo",
+            "control viejo",
+            "control de tv",
+            "control del televisor",
+            "mando remoto",
+            "mando antiguo",
+            "de un control",
+            "del control",
+        ]
+    )
+    if remote_control_context:
+        expansions.append("pila pilas bateria control remoto punto limpio residuo peligroso")
+
     food_waste_context = any(
         phrase in text
         for phrase in [

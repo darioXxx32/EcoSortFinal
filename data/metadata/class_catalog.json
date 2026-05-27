@@ -23,10 +23,17 @@
         "power bank",
         "bateria externa",
         "bateria de laptop",
-        "cargador portatil"
+        "cargador portatil",
+        "pilas de control remoto",
+        "pilas de control antiguo",
+        "pilas del mando remoto"
       ],
       "text_hints": [
         "venia de un control remoto",
+        "son de un control antiguo",
+        "salieron de un control viejo",
+        "pilas del control",
+        "baterias de un control de tv",
         "es una pila usada",
         "salio de un juguete",
         "es una bateria pequena",

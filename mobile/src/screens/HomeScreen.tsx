@@ -49,6 +49,7 @@ const QUICK_NOTES = [
   { label: "Composta", text: "Cascara de fruta para compost" },
   { label: "Caja grasa", text: "Caja de carton con grasa y restos de comida" },
   { label: "Pila", text: "Pila usada de control remoto" },
+  { label: "Control viejo", text: "Son de un control antiguo" },
   { label: "Ropa", text: "Ropa en buen estado para donar" },
   { label: "Vidrio roto", text: "Frasco de vidrio roto y vacio" },
   { label: "Tetrapak", text: "Envase tetrapak de jugo ya vacio" },
@@ -816,7 +817,7 @@ export default function HomeScreen({ onPrediction }: Props) {
 
               <View style={styles.extraPanel}>
                 <View style={styles.extraHeader}>
-                  <View>
+                  <View style={styles.extraHeaderCopy}>
                     <Text style={styles.actionTitle}>Acciones para este resultado</Text>
                     <Text style={styles.helperDark}>Opciones utiles segun lo que detecto la IA.</Text>
                   </View>
@@ -1124,6 +1125,7 @@ const styles = StyleSheet.create({
   infoPanel: { backgroundColor: "#F7FAF2", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.md, gap: spacing.sm },
   extraPanel: { backgroundColor: "#FAFBF8", borderRadius: 8, borderWidth: 1, borderColor: colors.line, padding: spacing.md, gap: spacing.sm },
   extraHeader: { flexDirection: "row", justifyContent: "space-between", gap: spacing.sm, alignItems: "flex-start" },
+  extraHeaderCopy: { flex: 1, minWidth: 0 },
   newScanButton: { minHeight: 36, borderRadius: 8, backgroundColor: colors.ink, paddingHorizontal: 13, alignItems: "center", justifyContent: "center" },
   newScanText: { color: colors.white, fontWeight: "900", fontSize: 12 },
   extraGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },

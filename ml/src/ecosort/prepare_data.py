@@ -65,6 +65,12 @@ CLASS_SPECIFIC_TEXTS = {
         "bateria hinchada de celular",
         "power bank usado",
         "pila descargada para punto limpio",
+        "son de un control antiguo",
+        "pilas de un control antiguo",
+        "baterias de un control remoto",
+        "salieron de un control viejo",
+        "pilas del mando remoto",
+        "pila de control de tv",
     ],
     "biological": [
         "cascara de fruta para compost",

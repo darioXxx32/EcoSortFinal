@@ -229,6 +229,15 @@ class EcoSortService:
             merged_scores["plastic"] *= 0.35
             mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
 
+        if semantic.matched_terms["battery"]:
+            merged_scores["battery"] += 1.45
+            merged_scores["paper"] *= 0.06
+            merged_scores["cardboard"] *= 0.06
+            merged_scores["clothes"] *= 0.16
+            merged_scores["shoes"] *= 0.16
+            merged_scores["plastic"] *= 0.22
+            mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
+
         if semantic.intent_flags.get("compost") and semantic.matched_terms["biological"]:
             merged_scores["biological"] += 0.95
             merged_scores["cardboard"] *= 0.18
