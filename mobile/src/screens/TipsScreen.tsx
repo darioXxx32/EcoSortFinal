@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   Linking,
   Platform,
   Pressable,
@@ -153,10 +154,34 @@ export default function TipsScreen({ prediction, note, onScanRequest }: Props) {
   const [searchText, setSearchText] = useState("");
   const [quizAnswer, setQuizAnswer] = useState<"yes" | "no" | null>(null);
   const [funFact] = useState(getRandomFact);
+  const introAnim = useRef(new Animated.Value(0)).current;
+  const contentAnim = useRef(new Animated.Value(0)).current;
 
   const labelKey = prediction?.label_key ?? "";
   const recommendation = prediction?.recommendation;
   const hasPrediction = Boolean(prediction && recommendation);
+
+  const introLift = introAnim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
+  const contentLift = contentAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
+
+  useEffect(() => {
+    introAnim.setValue(0);
+    contentAnim.setValue(0);
+    Animated.stagger(120, [
+      Animated.timing(introAnim, {
+        toValue: 1,
+        duration: 520,
+        useNativeDriver: true
+      }),
+      Animated.spring(contentAnim, {
+        toValue: 1,
+        damping: 16,
+        stiffness: 130,
+        mass: 0.8,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, [contentAnim, introAnim]);
 
   const videos = useMemo(() => {
     const manual = searchText.trim().length >= 3 ? getSearchSuggestions(searchText) : [];
@@ -189,16 +214,18 @@ export default function TipsScreen({ prediction, note, onScanRequest }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <LinearGradient colors={HERO_GRADIENT} style={styles.discoveryHero}>
-          <Text style={styles.brand}>EcoSort Discovery</Text>
-          <Text style={styles.title}>Aprende a separar mejor</Text>
-          <Text style={styles.subtitle}>
-            Busca un residuo, mira el resultado de la IA y convierte cada escaneo en una accion util.
-          </Text>
-          <View style={styles.heroWave} />
-        </LinearGradient>
+        <Animated.View style={{ opacity: introAnim, transform: [{ translateY: introLift }] }}>
+          <LinearGradient colors={HERO_GRADIENT} style={styles.discoveryHero}>
+            <Text style={styles.brand}>EcoSort Discovery</Text>
+            <Text style={styles.title}>Aprende a separar mejor</Text>
+            <Text style={styles.subtitle}>
+              Busca un residuo, mira el resultado de la IA y convierte cada escaneo en una accion util.
+            </Text>
+            <View style={styles.heroWave} />
+          </LinearGradient>
+        </Animated.View>
 
-        <View style={styles.lookupCard}>
+        <Animated.View style={[styles.lookupCard, { opacity: contentAnim, transform: [{ translateY: contentLift }] }]}>
           <View style={styles.lookupHeader}>
             <View style={styles.lookupTitleBlock}>
               <Text style={styles.sectionEyebrow}>Busqueda rapida</Text>
@@ -222,34 +249,36 @@ export default function TipsScreen({ prediction, note, onScanRequest }: Props) {
               <Text style={styles.searchButtonText}>BUS</Text>
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
 
         {hasPrediction && recommendation ? (
-          <Pressable
-            style={styles.predictionSpotlight}
-            onPress={() => openVideo(`${recommendation.label_display} reciclaje manejo correcto`)}
-          >
-            <View style={styles.spotlightTop}>
-              <View>
-                <Text style={styles.sectionEyebrow}>Segun tu ultimo analisis</Text>
-                <Text style={styles.spotlightTitle}>{recommendation.detected_item ?? recommendation.label_display}</Text>
-                <Text style={styles.spotlightFamily}>{recommendation.family_display ?? recommendation.waste_stream}</Text>
+          <Animated.View style={{ opacity: contentAnim, transform: [{ translateY: contentLift }] }}>
+            <Pressable
+              style={styles.predictionSpotlight}
+              onPress={() => openVideo(`${recommendation.label_display} reciclaje manejo correcto`)}
+            >
+              <View style={styles.spotlightTop}>
+                <View>
+                  <Text style={styles.sectionEyebrow}>Segun tu ultimo analisis</Text>
+                  <Text style={styles.spotlightTitle}>{recommendation.detected_item ?? recommendation.label_display}</Text>
+                  <Text style={styles.spotlightFamily}>{recommendation.family_display ?? recommendation.waste_stream}</Text>
+                </View>
+                <View style={styles.scoreBadge}>
+                  <Text style={styles.scoreText}>{percent(prediction?.confidence)}</Text>
+                </View>
               </View>
-              <View style={styles.scoreBadge}>
-                <Text style={styles.scoreText}>{percent(prediction?.confidence)}</Text>
-              </View>
-            </View>
-            <Text style={styles.spotlightVerdict}>
-              {recommendation.quick_verdict ?? recommendation.recyclable_condition}
-            </Text>
-            {note.trim() ? <Text style={styles.noteLine}>Tu descripcion: {note.trim()}</Text> : null}
-          </Pressable>
+              <Text style={styles.spotlightVerdict}>
+                {recommendation.quick_verdict ?? recommendation.recyclable_condition}
+              </Text>
+              {note.trim() ? <Text style={styles.noteLine}>Tu descripcion: {note.trim()}</Text> : null}
+            </Pressable>
+          </Animated.View>
         ) : (
-          <View style={styles.emptySpotlight}>
+          <Animated.View style={[styles.emptySpotlight, { opacity: contentAnim, transform: [{ translateY: contentLift }] }]}>
             <Text style={styles.sectionEyebrow}>Listo para analizar</Text>
             <Text style={styles.emptyTitle}>Escanea con foto + descripcion</Text>
             <Text style={styles.emptyText}>La guia se personaliza cuando EcoSort detecta el residuo.</Text>
-          </View>
+          </Animated.View>
         )}
 
         <View style={styles.habitPanel}>
