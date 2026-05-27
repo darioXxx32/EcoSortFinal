@@ -32,15 +32,26 @@ if ($pythonExe -eq $kerasPython) {
 Write-Host ""
 Write-Host "EcoSort API escuchara en todas las interfaces: http://0.0.0.0:8000"
 Write-Host "URLs probables para el celular:"
+$wifiProfiles = @(Get-NetConnectionProfile -ErrorAction SilentlyContinue)
+$localIps = @(
 Get-NetIPAddress -AddressFamily IPv4 |
   Where-Object {
     $_.IPAddress -notlike "127.*" -and
     ($_.IPAddress -like "10.*" -or $_.IPAddress -like "192.168.*" -or $_.IPAddress -match "^172\.(1[6-9]|2\d|3[0-1])\.")
   } |
-  Sort-Object InterfaceAlias,IPAddress |
-  ForEach-Object { Write-Host ("  http://{0}:8000  ({1})" -f $_.IPAddress, $_.InterfaceAlias) }
+  Sort-Object InterfaceAlias,IPAddress
+)
+$localIps | ForEach-Object {
+  $ipInfo = $_
+  $profile = $wifiProfiles | Where-Object { $_.InterfaceAlias -eq $ipInfo.InterfaceAlias } | Select-Object -First 1
+  $category = if ($profile) { $profile.NetworkCategory } else { "desconocido" }
+  Write-Host ("  http://{0}:8000  ({1}, /{2}, perfil {3})" -f $ipInfo.IPAddress, $ipInfo.InterfaceAlias, $ipInfo.PrefixLength, $category)
+}
 Write-Host ""
-Write-Host "Si el celular no conecta, permite Python/Uvicorn en Firewall de Windows para redes privadas."
+Write-Host "Prueba rapida desde el celular: abre http://IP_DE_ARRIBA:8000/health en Chrome."
+Write-Host "Si no abre, no es la app: es Firewall de Windows o aislamiento de la red Wi-Fi."
+Write-Host "En redes universitarias puede bloquearse la comunicacion celular-laptop aunque ambos tengan internet."
+Write-Host "Solucion rapida: usa hotspot del celular o un tunel HTTPS y pega esa URL en la app."
 Write-Host ""
 
 & $pythonExe -m uvicorn app.main:app --host 0.0.0.0 --port 8000

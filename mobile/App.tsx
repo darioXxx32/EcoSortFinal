@@ -12,8 +12,8 @@ type Tab = "home" | "tips" | "facts";
 
 const TAB_ICONS: Record<Tab, string> = {
   home: "AI",
-  tips: "VID",
-  facts: "INFO",
+  tips: "GUIA",
+  facts: "?",
 };
 
 export default function App() {
@@ -22,9 +22,9 @@ export default function App() {
   const [lastNote, setLastNote] = useState("");
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "home", label: "Analizar" },
-    { key: "tips", label: "Aprender" },
-    { key: "facts", label: "Datos" },
+    { key: "home", label: "Escanear" },
+    { key: "tips", label: "Discovery" },
+    { key: "facts", label: "Ayuda" },
   ];
 
   return (
@@ -39,7 +39,9 @@ export default function App() {
             }}
           />
         )}
-        {activeTab === "tips" && <TipsScreen prediction={lastPrediction} note={lastNote} />}
+        {activeTab === "tips" && (
+          <TipsScreen prediction={lastPrediction} note={lastNote} onScanRequest={() => setActiveTab("home")} />
+        )}
         {activeTab === "facts" && <FunFactsScreen />}
       </View>
       <View style={styles.tabBar}>

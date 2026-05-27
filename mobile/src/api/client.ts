@@ -109,13 +109,21 @@ function getConfidenceBand(confidence: number) {
 
 export function normalizeApiUrl(apiUrl: string) {
   const rawUrl = apiUrl.trim();
-  const withProtocol = /^https?:\/\//i.test(rawUrl) ? rawUrl : `http://${rawUrl}`;
+  const hasProtocol = /^https?:\/\//i.test(rawUrl);
+  const withProtocol = hasProtocol ? rawUrl : `http://${rawUrl}`;
   try {
     const parsed = new URL(withProtocol);
+    const host = parsed.hostname;
+    const isLocalBackend =
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
     if (["8081", "19000", "19001", "19002"].includes(parsed.port)) {
       parsed.port = "8000";
     }
-    if (!parsed.port) {
+    if (!parsed.port && (!hasProtocol || isLocalBackend)) {
       parsed.port = "8000";
     }
     parsed.pathname = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "");

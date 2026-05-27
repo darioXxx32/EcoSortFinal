@@ -54,13 +54,17 @@ Artefactos principales:
 
 Corrida actual:
 
-- Epocas ejecutadas: 120 acumuladas
-- Ultima reanudacion: 20 epocas desde `best_model.keras` con anotaciones textuales enriquecidas
-- Muestras de entrenamiento usadas: 9000
+- Epocas ejecutadas: 124 acumuladas
+- Ultima reanudacion: 1 epoca desde `best_model.keras` con anotaciones textuales enriquecidas y casos ambiguos
+- Muestras de entrenamiento usadas: 112152
+- Muestras de prueba: 22766
 - Imagen: 128x128
 - Backbone: MobileNetV3 Small preentrenado, congelado
-- Test accuracy: 0.9207
-- Test loss: 0.2485
+- Test accuracy metadata: 0.8678
+- Test accuracy recalculada por batch: 0.8666
+- Macro F1 recalculado: 0.8380
+- F1 ponderado recalculado: 0.8667
+- Test loss: 0.6740
 
 ## 4. Backend
 
