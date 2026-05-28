@@ -3,6 +3,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usepackage{booktabs}
 \usepackage{array}
@@ -17,6 +18,9 @@
 \definecolor{sky}{HTML}{DCEEE5}
 \definecolor{ink}{HTML}{122318}
 \definecolor{bluegray}{HTML}{24556B}
+\definecolor{mint}{HTML}{E8F4EC}
+
+\graphicspath{{../mobile/assets/}{../assets/icon/}}
 
 \setbeamertemplate{navigation symbols}{}
 \setbeamercolor{background canvas}{bg=cream}
@@ -26,19 +30,7 @@
 \setbeamerfont{title}{series=\bfseries,size=\Huge}
 \setbeamerfont{subtitle}{size=\large}
 
-\newcommand{\LogoMark}[1][1]{
-\begin{tikzpicture}[scale=#1, baseline=-0.45ex]
-  \fill[forest, rounded corners=0.22cm] (0,0) rectangle (1.8,1.8);
-  \fill[cream, rounded corners=0.18cm] (0.38,0.42) rectangle (1.28,1.25);
-  \fill[leaf] (0.72,1.32) .. controls (0.50,1.62) and (0.94,1.78) .. (1.10,1.42)
-              .. controls (0.98,1.44) and (0.84,1.42) .. cycle;
-  \fill[moss] (1.04,1.35) .. controls (1.22,1.72) and (1.56,1.65) .. (1.45,1.30)
-              .. controls (1.30,1.24) and (1.17,1.27) .. cycle;
-  \draw[forest, line width=2.1pt, line cap=round] (0.58,0.88)--(1.10,0.88);
-  \draw[forest, line width=2.1pt, line cap=round] (0.58,0.64)--(1.10,0.64);
-  \fill[coral] (1.26,0.50) circle (0.17);
-\end{tikzpicture}
-}
+\newcommand{\AppLogo}[1][1.35cm]{\includegraphics[height=#1]{icon.png}}
 
 \newcommand{\Chip}[2]{%
 \tikz[baseline=(x.base)]\node[rounded corners=4pt, fill=#1, inner xsep=7pt, inner ysep=4pt] (x) {\scriptsize\bfseries #2};%
@@ -46,280 +38,290 @@
 
 \newcommand{\MetricBar}[4]{%
 \begin{tikzpicture}[x=1cm,y=1cm]
-  \fill[#3] (0,0) rectangle (#2,0.24);
-  \draw[ink!20] (0,0) rectangle (2.75,0.24);
-  \node[anchor=east, font=\tiny] at (-0.08,0.12) {#1};
-  \node[anchor=west, font=\tiny\bfseries] at (2.88,0.12) {#4};
+  \draw[ink!20, line width=0.7pt] (0,0) rectangle (3.0,0.26);
+  \fill[#3] (0,0) rectangle (#2,0.26);
+  \node[anchor=east, font=\scriptsize] at (-0.08,0.13) {#1};
+  \node[anchor=west, font=\scriptsize\bfseries] at (3.12,0.13) {#4};
 \end{tikzpicture}
 }
 
-\newcommand{\DemoRow}[5]{%
-  \fill[white, rounded corners=5pt] (0,#1) rectangle (7.0,#1+0.62);
-  \fill[#5!55] (0.18,#1+0.13) circle (0.18);
-  \node[anchor=west, font=\bfseries] at (0.55,#1+0.43) {#2};
-  \node[anchor=west] at (2.05,#1+0.43) {#3};
-  \node[anchor=west, text=#5!70!black, font=\bfseries] at (4.65,#1+0.43) {#4};
-}
-
-\newcommand{\ValueCard}[4]{%
-  \fill[#4, rounded corners=6pt] (#1-1.15,1.0) rectangle (#1+1.15,3.55);
-  \node[font=\bfseries, align=center] at (#1,2.85) {#2};
-  \node[font=\scriptsize, align=center] at (#1,1.8) {#3};
+\newcommand{\TimeTag}[1]{%
+\begin{tikzpicture}[remember picture, overlay]
+  \node[anchor=north east, rounded corners=4pt, fill=forest, text=cream, inner xsep=7pt, inner ysep=4pt, font=\scriptsize\bfseries]
+  at ([xshift=-0.25cm,yshift=-0.25cm]current page.north east) {#1};
+\end{tikzpicture}
 }
 
 \title{EcoSort}
 \subtitle{Your waste, in the right place.}
-\author{Jesus Manuel Delgado Ramos \and Eduar Jose Lopez Narvaez \and Juan David Meza Urango \and Jesus Antonio Vergara Villanueva}
-\institute{University of Cordoba}
+\author{Dario Pomasqui}
+\institute{Yachay Tech University}
 \date{Neural Networks and Deep Learning}
 
 \begin{document}
 
+% 1. Strong opening
 \begin{frame}[plain]
 \begin{tikzpicture}[remember picture, overlay]
   \fill[forest] (current page.north west) rectangle (current page.south east);
-  \fill[leaf!55] ([xshift=-1.3cm,yshift=-0.5cm]current page.north east) circle (2.4cm);
-  \fill[coral!80] ([xshift=1.0cm,yshift=0.3cm]current page.south west) circle (1.5cm);
-  \fill[sky!50] ([xshift=-0.2cm,yshift=0.2cm]current page.south east) circle (1.2cm);
+  \fill[leaf!55] ([xshift=-1.2cm,yshift=-0.7cm]current page.north east) circle (2.7cm);
+  \fill[coral!78] ([xshift=0.7cm,yshift=0.2cm]current page.south west) circle (1.55cm);
+  \fill[sky!55] ([xshift=-0.3cm,yshift=0.4cm]current page.south east) circle (1.2cm);
 \end{tikzpicture}
-\vspace{0.8cm}
+\TimeTag{1 min}
+\vspace{0.55cm}
 \begin{center}
-  \LogoMark[1.75]\\[0.35cm]
-  {\Huge\bfseries\textcolor{cream}{EcoSort}}\\[0.15cm]
+  \AppLogo[1.9cm]\\[0.25cm]
+  {\Huge\bfseries\textcolor{cream}{EcoSort}}\\[0.12cm]
   {\Large\textcolor{sand}{Your waste, in the right place.}}\\[0.55cm]
-  \Chip{cream}{Multimodal AI} \hspace{0.15cm}
-  \Chip{sky}{Photo + text} \hspace{0.15cm}
-  \Chip{coral!70}{Instant action}\\[0.75cm]
-  {\small\textcolor{cream}{University of Cordoba | Neural Networks}}
+  {\large\bfseries\textcolor{cream}{Every day, a seconds-long decision can contaminate an entire recyclable batch.}}\\[0.45cm]
+  \Chip{cream}{Multimodal AI} \hspace{0.12cm}
+  \Chip{sky}{Photo + text} \hspace{0.12cm}
+  \Chip{coral!70}{Immediate action}\\[0.55cm]
+  {\small\textcolor{cream}{Dario Pomasqui | Yachay Tech University | Neural Networks and Deep Learning}}
 \end{center}
 \end{frame}
 
-\begin{frame}{The Problem}
+% 2. Problem
+\begin{frame}{What Problem Does It Solve?}
+\TimeTag{2 min}
 \begin{columns}[T]
 \column{0.48\textwidth}
 \begin{tikzpicture}
-  \fill[white, rounded corners=8pt] (0,0) rectangle (5.6,5.2);
-  \node[align=center, font=\bfseries\Large, text=forest] at (2.8,4.55) {The doubt appears\\in seconds};
-  \node[draw, rounded corners=6pt, fill=sky, minimum width=4.6cm, minimum height=0.7cm] at (2.8,3.35) {``\textit{I have a greasy box}''};
-  \node[draw, rounded corners=6pt, fill=sand, minimum width=4.6cm, minimum height=0.7cm] at (2.8,2.35) {``\textit{Recycle or trash?}''};
-  \node[draw, rounded corners=6pt, fill=coral!28, minimum width=4.6cm, minimum height=0.7cm] at (2.8,1.35) {``\textit{What about a battery?}''};
+  \fill[white, rounded corners=8pt] (0,0) rectangle (5.7,5.35);
+  \node[align=center, font=\bfseries\Large, text=forest] at (2.85,4.75) {The doubt appears\\in your hand};
+  \node[draw, rounded corners=7pt, fill=sky, minimum width=4.8cm, minimum height=0.72cm] at (2.85,3.55) {``I have a juice box''};
+  \node[draw, rounded corners=7pt, fill=sand, minimum width=4.8cm, minimum height=0.72cm] at (2.85,2.55) {``These batteries no longer work''};
+  \node[draw, rounded corners=7pt, fill=coral!25, minimum width=4.8cm, minimum height=0.72cm] at (2.85,1.55) {``Leftover food from yesterday''};
+  \node[align=center, font=\small] at (2.85,0.55) {Users do not need theory;\\they need a clear decision.};
 \end{tikzpicture}
 \column{0.48\textwidth}
 \begin{tikzpicture}
-  \fill[white, rounded corners=8pt] (0,0) rectangle (5.6,5.2);
-  \node[font=\bfseries\Large, text=forest] at (2.8,4.55) {One mistake contaminates};
-  \foreach \x/\c/\t in {1/leaf/Recycling,2.8/coral/Mixed,4.6/bluegray/Special} {
-    \fill[\c!25, rounded corners=5pt] (\x-0.55,2.0) rectangle (\x+0.55,3.7);
-    \fill[\c] (\x-0.65,3.55) rectangle (\x+0.65,3.8);
-    \node[font=\scriptsize\bfseries, align=center] at (\x,1.55) {\t};
+  \fill[white, rounded corners=8pt] (0,0) rectangle (5.7,5.35);
+  \node[font=\bfseries\Large, text=forest] at (2.85,4.75) {Who is affected};
+  \foreach \y/\c/\t/\d in {
+    3.65/leaf/Households/Daily sorting without long guides,
+    2.55/bluegray/Campus/Mixed waste in classrooms and cafeterias,
+    1.45/coral/Cities/Contaminated recycling and special routes
+  } {
+    \fill[\c!22, rounded corners=6pt] (0.45,\y-0.35) rectangle (5.25,\y+0.35);
+    \fill[\c] (0.78,\y) circle (0.14);
+    \node[anchor=west, font=\bfseries] at (1.05,\y+0.12) {\t};
+    \node[anchor=west, font=\scriptsize] at (1.05,\y-0.14) {\d};
   }
-  \node[align=center, text=ink] at (2.8,0.75) {Wrong separation can ruin\\an entire recoverable batch.};
+  \node[align=center, font=\small] at (2.85,0.45) {When waste is sorted incorrectly,\\environmental value is lost.};
 \end{tikzpicture}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Target Users}
-\begin{columns}[T]
-\column{0.31\textwidth}
-\begin{tikzpicture}
-  \fill[white, rounded corners=8pt] (0,0) rectangle (3.7,4.8);
-  \fill[sky] (1.85,3.35) circle (0.62);
-  \node[font=\bfseries, align=center] at (1.85,2.35) {Homes};
-  \node[font=\scriptsize, align=center] at (1.85,1.25) {People who want\\to sort waste without\\reading long guides.};
-\end{tikzpicture}
-\column{0.31\textwidth}
-\begin{tikzpicture}
-  \fill[white, rounded corners=8pt] (0,0) rectangle (3.7,4.8);
-  \fill[leaf!45] (1.85,3.35) circle (0.62);
-  \node[font=\bfseries, align=center] at (1.85,2.35) {Schools};
-  \node[font=\scriptsize, align=center] at (1.85,1.25) {Environmental\\education with visible\\daily decisions.};
-\end{tikzpicture}
-\column{0.31\textwidth}
-\begin{tikzpicture}
-  \fill[white, rounded corners=8pt] (0,0) rectangle (3.7,4.8);
-  \fill[coral!55] (1.85,3.35) circle (0.62);
-  \node[font=\bfseries, align=center] at (1.85,2.35) {Cities};
-  \node[font=\scriptsize, align=center] at (1.85,1.25) {Cleaner recycling\\streams and fewer\\special-waste errors.};
-\end{tikzpicture}
-\end{columns}
-\end{frame}
-
+% 3. Solution
 \begin{frame}{The Solution}
+\TimeTag{2 min}
 \begin{columns}[T]
-\column{0.42\textwidth}
-\begin{tikzpicture}
-  \fill[ink, rounded corners=10pt] (0,0) rectangle (3.0,5.4);
-  \fill[cream, rounded corners=8pt] (0.18,0.22) rectangle (2.82,5.18);
-  \fill[sky, rounded corners=5pt] (0.42,3.1) rectangle (2.58,4.82);
-  \node[font=\scriptsize\bfseries] at (1.5,4.0) {Photo};
-  \fill[white, rounded corners=4pt] (0.42,2.35) rectangle (2.58,2.92);
-  \node[font=\scriptsize] at (1.5,2.63) {Clean PET bottle};
-  \fill[moss, rounded corners=4pt] (0.42,1.55) rectangle (2.58,2.08);
-  \node[font=\scriptsize\bfseries, text=white] at (1.5,1.82) {Analyze};
-  \fill[leaf!35, rounded corners=4pt] (0.42,0.55) rectangle (2.58,1.25);
-  \node[font=\scriptsize\bfseries, align=center] at (1.5,0.9) {Recycle\\clean and dry};
-\end{tikzpicture}
-\column{0.53\textwidth}
-\vspace{0.25cm}
-{\Large\bfseries EcoSort does not only classify.}\\[0.18cm]
-{\large It tells the user what to do now.}\\[0.5cm]
-\Chip{sky}{1. Clear photo}\\[0.2cm]
-\Chip{sand}{2. Short description}\\[0.2cm]
-\Chip{leaf!35}{3. Verdict + steps}\\[0.55cm]
-\begin{tikzpicture}[font=\scriptsize]
-  \node[draw, rounded corners, fill=white, minimum width=6.6cm, minimum height=0.65cm] (a) {reuse};
-  \node[draw, rounded corners, fill=white, below=0.12cm of a, minimum width=6.6cm, minimum height=0.65cm] (b) {clean and recycle};
-  \node[draw, rounded corners, fill=white, below=0.12cm of b, minimum width=6.6cm, minimum height=0.65cm] (c) {compost};
-  \node[draw, rounded corners, fill=white, below=0.12cm of c, minimum width=6.6cm, minimum height=0.65cm] (d) {special collection point};
-\end{tikzpicture}
-\end{columns}
-\end{frame}
-
-\begin{frame}{Functional Demo}
-\begin{columns}[T]
-\column{0.56\textwidth}
-\begin{tikzpicture}[font=\scriptsize]
-\DemoRow{4.1}{PET}{Clean bottle}{Dry recycling}{leaf}
-\DemoRow{3.2}{Cardboard}{Greasy box}{Trash or compost}{coral}
-\DemoRow{2.3}{Battery}{Remote control}{Special point}{bluegray}
-\DemoRow{1.4}{Clothes}{Does not fit}{Donate or sell}{moss}
-\DemoRow{0.5}{Glass}{Clean jar}{Reuse first}{leaf}
-\end{tikzpicture}
 \column{0.38\textwidth}
-\vspace{0.3cm}
-{\Large\bfseries Live demo}\\[0.35cm]
 \begin{tikzpicture}
-  \fill[forest, rounded corners=8pt] (0,0) rectangle (4.2,2.4);
-  \node[text=cream, align=center, font=\bfseries] at (2.1,1.55) {API + Expo};
-  \node[text=sand, align=center, font=\scriptsize] at (2.1,0.75) {scripts/start\_api.ps1\\scripts/start\_mobile.ps1};
-\end{tikzpicture}\\[0.3cm]
-{\small The app shows a verdict, photo/text evidence, risk level, and disposal steps.}
+  \fill[ink, rounded corners=12pt] (0,0) rectangle (3.25,5.55);
+  \fill[cream, rounded corners=10pt] (0.18,0.22) rectangle (3.07,5.28);
+  \fill[sky, rounded corners=6pt] (0.45,3.28) rectangle (2.80,4.88);
+  \node[font=\scriptsize\bfseries] at (1.62,4.12) {Waste photo};
+  \fill[white, rounded corners=5pt] (0.45,2.47) rectangle (2.80,3.00);
+  \node[font=\scriptsize] at (1.62,2.73) {Brief description};
+  \fill[moss, rounded corners=5pt] (0.45,1.67) rectangle (2.80,2.17);
+  \node[font=\scriptsize\bfseries, text=white] at (1.62,1.92) {Analyze};
+  \fill[leaf!30, rounded corners=5pt] (0.45,0.55) rectangle (2.80,1.33);
+  \node[font=\scriptsize\bfseries, align=center] at (1.62,0.94) {Simple\\action plan};
+\end{tikzpicture}
+\column{0.58\textwidth}
+\vspace{0.25cm}
+{\Large\bfseries EcoSort does not only say what it is.}\\[0.12cm]
+{\large It tells you what to do with it.}\\[0.45cm]
+\begin{tikzpicture}[font=\small]
+  \node[draw, rounded corners=8pt, fill=sky, minimum width=6.7cm, minimum height=0.74cm] (a) {1. The user takes a photo};
+  \node[draw, rounded corners=8pt, fill=sand, below=0.18cm of a, minimum width=6.7cm, minimum height=0.74cm] (b) {2. Writes a short description};
+  \node[draw, rounded corners=8pt, fill=leaf!30, below=0.18cm of b, minimum width=6.7cm, minimum height=0.74cm] (c) {3. Gets a verdict, steps, and alerts};
+\end{tikzpicture}\\[0.45cm]
+\Chip{mint}{recycle} \hspace{0.12cm}
+\Chip{mint}{clean} \hspace{0.12cm}
+\Chip{mint}{donate} \hspace{0.12cm}
+\Chip{mint}{compost} \hspace{0.12cm}
+\Chip{mint}{special point}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Neural Network Without Jargon}
-\begin{tikzpicture}[node distance=1.0cm, font=\small]
-\node[draw, rounded corners, fill=sky, minimum width=3.2cm, minimum height=1.0cm, align=center] (img) at (1.6,0) {The app sees\\the photo};
-\node[draw, rounded corners, fill=sand, right=1.0cm of img, minimum width=3.2cm, minimum height=1.0cm, align=center] (txt) {The app reads\\the clue};
-\node[draw, rounded corners, fill=leaf!35, below=1.0cm of $(img)!0.5!(txt)$, minimum width=4.1cm, minimum height=1.0cm, align=center] (brain) {It combines\\both signals};
-\node[draw, rounded corners, fill=coral!30, below=1.0cm of brain, minimum width=6.4cm, minimum height=1.0cm, align=center] (plan) {It returns one action: clean, recycle, donate, compost, or special point};
-\draw[->, thick] (img) -- (brain);
-\draw[->, thick] (txt) -- (brain);
-\draw[->, thick] (brain) -- (plan);
-\node[anchor=west, align=left, text width=4.1cm] at (8.0,2.0) {\Large\bfseries Example\\[0.2cm]\small A \textbf{clean bottle}\\is not the same as\\a \textbf{chemical container}.};
+% 4. Demo
+\begin{frame}{Functional Demo}
+\TimeTag{2--3 min}
+\begin{columns}[T]
+\column{0.55\textwidth}
+\begin{tikzpicture}[font=\scriptsize]
+  \fill[white, rounded corners=8pt] (0,0) rectangle (7.0,5.4);
+  \node[font=\bfseries\Large, text=forest] at (3.5,4.82) {A real use case};
+  \fill[bluegray!18, rounded corners=6pt] (0.45,3.50) rectangle (6.55,4.20);
+  \fill[bluegray] (0.82,3.85) circle (0.16);
+  \node[text=white, font=\bfseries] at (0.82,3.85) {1};
+  \node[anchor=west, font=\bfseries] at (1.12,3.99) {Photo: AA batteries};
+  \node[anchor=west, font=\scriptsize] at (1.12,3.72) {Result: battery};
+  \fill[leaf!18, rounded corners=6pt] (0.45,2.55) rectangle (6.55,3.25);
+  \fill[leaf] (0.82,2.90) circle (0.16);
+  \node[text=white, font=\bfseries] at (0.82,2.90) {2};
+  \node[anchor=west, font=\bfseries] at (1.12,3.04) {Text: ``from an old remote''};
+  \node[anchor=west, font=\scriptsize] at (1.12,2.77) {Action: special point};
+  \fill[coral!18, rounded corners=6pt] (0.45,1.60) rectangle (6.55,2.30);
+  \fill[coral] (0.82,1.95) circle (0.16);
+  \node[text=white, font=\bfseries] at (0.82,1.95) {3};
+  \node[anchor=west, font=\bfseries] at (1.12,2.09) {Photo: dinner leftovers};
+  \node[anchor=west, font=\scriptsize] at (1.12,1.82) {Result: organic waste};
+  \fill[moss!18, rounded corners=6pt] (0.45,0.65) rectangle (6.55,1.35);
+  \fill[moss] (0.82,1.00) circle (0.16);
+  \node[text=white, font=\bfseries] at (0.82,1.00) {4};
+  \node[anchor=west, font=\bfseries] at (1.12,1.14) {Text: ``from yesterday''};
+  \node[anchor=west, font=\scriptsize] at (1.12,0.87) {Action: organics or compost};
+\end{tikzpicture}
+\column{0.40\textwidth}
+\vspace{0.25cm}
+{\Large\bfseries Live demo}\\[0.25cm]
+\begin{tikzpicture}
+  \fill[forest, rounded corners=8pt] (0,0) rectangle (4.8,2.65);
+  \node[text=cream, align=center, font=\bfseries\Large] at (2.4,1.75) {EcoSort};
+  \node[text=sand, align=center, font=\small] at (2.4,0.95) {Scan\\Describe\\Act};
+\end{tikzpicture}\\[0.35cm]
+{\small The demo can be live in the app or shown as a short video recorded from the phone.}
+\end{columns}
+\end{frame}
+
+% 5. AI inside, non-technical
+\begin{frame}{How It Works Inside}
+\TimeTag{2 min}
+\begin{tikzpicture}[node distance=0.85cm, font=\small]
+\node[draw, rounded corners, fill=sky, minimum width=3.2cm, minimum height=1.0cm, align=center] (img) at (1.7,0) {Sees the photo\\of the waste};
+\node[draw, rounded corners, fill=sand, right=1.0cm of img, minimum width=3.2cm, minimum height=1.0cm, align=center] (txt) {Reads a clue\\from the user};
+\node[draw, rounded corners, fill=leaf!35, below=0.95cm of $(img)!0.5!(txt)$, minimum width=4.4cm, minimum height=1.0cm, align=center] (fusion) {Fuses\\image + text};
+\node[draw, rounded corners, fill=coral!30, below=0.95cm of fusion, minimum width=6.6cm, minimum height=1.0cm, align=center] (plan) {Returns an environmental action};
+\draw[->, thick] (img) -- (fusion);
+\draw[->, thick] (txt) -- (fusion);
+\draw[->, thick] (fusion) -- (plan);
+\node[anchor=west, align=left, text width=4.8cm] at (7.55,1.55) {{\Large\bfseries No code needed}\\[0.18cm]\small The neural network recognizes\\the material in the image.\\[0.12cm]The semantic layer reads context:\\clean, chemical, sanitary,\\or reusable.};
 \end{tikzpicture}
 \end{frame}
 
-\begin{frame}{Multimodal Architecture}
-\begin{tikzpicture}[font=\scriptsize, node distance=0.35cm]
-\tikzstyle{box}=[draw, rounded corners, align=center, minimum width=3.0cm, minimum height=0.75cm]
+\begin{frame}{Technical Strength}
+\TimeTag{2 min}
+\begin{columns}[T]
+\column{0.52\textwidth}
+\begin{tikzpicture}[font=\scriptsize, node distance=0.34cm]
+\tikzstyle{box}=[draw, rounded corners, align=center, minimum width=3.0cm, minimum height=0.68cm]
 \node[box, fill=sky] (image) {Image\\$128\times128$};
-\node[box, fill=sky, below=of image] (mobilenet) {MobileNetV3 Small\\576 dim};
-\node[box, fill=sand, right=1.3cm of image] (text) {Text\\24 tokens};
-\node[box, fill=sand, below=of text] (bigru) {Embedding + BiGRU\\192 dim};
-\node[box, fill=leaf!30, below=1.0cm of $(mobilenet)!0.5!(bigru)$, minimum width=6.8cm] (fusion) {Late fusion: Concatenate 768 $\rightarrow$ Dense 256};
-\node[box, fill=coral!30, below=of fusion, minimum width=6.8cm] (out) {12 classes + semantic layer for 562 objects};
+\node[box, fill=sky, below=of image] (mobilenet) {MobileNetV3 Small};
+\node[box, fill=sand, right=0.95cm of image] (text) {Text\\24 tokens};
+\node[box, fill=sand, below=of text] (bigru) {Embedding + BiGRU};
+\node[box, fill=leaf!30, below=0.90cm of $(mobilenet)!0.5!(bigru)$, minimum width=6.5cm] (fusion) {Late fusion};
+\node[box, fill=coral!25, below=of fusion, minimum width=6.5cm] (out) {12 categories + semantic rules};
 \draw[->, thick] (image) -- (mobilenet);
 \draw[->, thick] (text) -- (bigru);
 \draw[->, thick] (mobilenet) -- (fusion);
 \draw[->, thick] (bigru) -- (fusion);
 \draw[->, thick] (fusion) -- (out);
-\node[align=left, anchor=west] at (9.0,2.1) {\bfseries Backend\\FastAPI\\[0.2cm]\scriptsize Loads Keras\\fuses rules\\returns plan};
 \end{tikzpicture}
-\end{frame}
-
-\begin{frame}{Architectural Decisions}
-\begin{columns}[T]
-\column{0.55\textwidth}
-{\scriptsize
-\begin{tabular}{p{0.34\linewidth}p{0.52\linewidth}}
-\toprule
-\textbf{We chose} & \textbf{Because} \\
-\midrule
-MobileNetV3 & Lightweight for mobile vision. \\
-BiGRU & Enough for short descriptions. \\
-Late fusion & Simpler and explainable. \\
-FastAPI & Loads larger models outside the APK. \\
-Semantic rules & Turn classes into actions. \\
-\bottomrule
-\end{tabular}
-}
 \column{0.42\textwidth}
-\vspace{0.15cm}
-{\scriptsize\bfseries Architecture comparison}\\[0.25cm]
-\MetricBar{ResNet+Transf.}{2.5}{coral!80}{high}\\[0.25cm]
-\MetricBar{Local}{2.15}{coral!80}{high}\\[0.25cm]
-\MetricBar{MobileNet+GRU}{1.35}{leaf!80!black}{balanced}\\[0.25cm]
-\MetricBar{Rules}{2.35}{bluegray!85}{high}
+\vspace{0.25cm}
+{\bfseries Architectural decisions}\\[0.25cm]
+{\scriptsize
+\begin{tikzpicture}
+  \fill[sky, rounded corners=5pt] (0,3.00) rectangle (5.00,3.58);
+  \node[anchor=west, font=\bfseries] at (0.18,3.31) {MobileNetV3};
+  \node[anchor=west] at (2.05,3.31) {lightweight mobile vision};
+  \fill[sand, rounded corners=5pt] (0,2.20) rectangle (5.00,2.78);
+  \node[anchor=west, font=\bfseries] at (0.18,2.51) {BiGRU};
+  \node[anchor=west] at (2.05,2.51) {short descriptions};
+  \fill[leaf!30, rounded corners=5pt] (0,1.40) rectangle (5.00,1.98);
+  \node[anchor=west, font=\bfseries] at (0.18,1.71) {Late fusion};
+  \node[anchor=west] at (2.05,1.71) {explainable decision};
+  \fill[coral!25, rounded corners=5pt] (0,0.60) rectangle (5.00,1.18);
+  \node[anchor=west, font=\bfseries] at (0.18,0.91) {Semantics};
+  \node[anchor=west] at (2.05,0.91) {label to action};
+\end{tikzpicture}
+}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Results}
+% 6. Results
+\begin{frame}{Results and Validation}
+\TimeTag{1--2 min}
 \begin{columns}[T]
-\column{0.48\textwidth}
-\begin{tikzpicture}[x=0.92cm,y=1cm]
-\draw[->] (0,0) -- (0,4.0);
-\draw[->] (0,0) -- (6.2,0);
+\column{0.50\textwidth}
+\begin{tikzpicture}[x=0.95cm,y=1cm]
+\draw[->] (0,0) -- (0,4.05);
+\draw[->] (0,0) -- (6.15,0);
 \foreach \y/\lab in {0/0,1/25,2/50,3/75,4/100} {
   \draw (-0.04,\y*0.9) -- (0.04,\y*0.9);
   \node[left, font=\scriptsize] at (-0.05,\y*0.9) {\lab};
 }
-\fill[leaf] (0.75,0) rectangle (1.55,3.12);
-\fill[bluegray] (2.65,0) rectangle (3.45,3.02);
-\fill[coral] (4.55,0) rectangle (5.35,3.12);
-\node[font=\scriptsize, align=center] at (1.15,-0.42) {Accuracy\\86.66\%};
-\node[font=\scriptsize, align=center] at (3.05,-0.42) {Macro F1\\83.80\%};
-\node[font=\scriptsize, align=center] at (4.95,-0.42) {Weighted F1\\86.67\%};
+\fill[leaf] (0.70,0) rectangle (1.50,3.12);
+\fill[bluegray] (2.55,0) rectangle (3.35,3.02);
+\fill[coral] (4.40,0) rectangle (5.20,3.12);
+\node[font=\scriptsize, align=center] at (1.10,-0.42) {Accuracy\\86.66\%};
+\node[font=\scriptsize, align=center] at (2.95,-0.42) {Macro F1\\83.80\%};
+\node[font=\scriptsize, align=center] at (4.80,-0.42) {Weighted F1\\86.67\%};
 \end{tikzpicture}
-\column{0.46\textwidth}
+\column{0.45\textwidth}
 \begin{tikzpicture}
-  \fill[white, rounded corners=8pt] (0,0) rectangle (5.5,4.0);
-  \node[font=\bfseries\Large, text=forest] at (2.75,3.35) {Final model};
-  \node[font=\large\bfseries] at (2.75,2.65) {124 epochs};
-  \node[font=\large\bfseries] at (2.75,2.05) {22,766 test samples};
-  \node[font=\large\bfseries] at (2.75,1.45) {Multimodal Keras};
-  \node[font=\scriptsize, align=center] at (2.75,0.68) {Remote batteries: 92.58\%\\Dinner leftovers: 90.95\%};
-  \node[font=\scriptsize, align=center] at (2.75,0.25) {Artifact: best\_model.keras};
+  \fill[white, rounded corners=8pt] (0,0) rectangle (5.4,4.45);
+  \node[font=\bfseries\Large, text=forest] at (2.7,3.78) {Functional validation};
+  \node[font=\Huge\bfseries, text=moss] at (2.7,2.75) {13/13};
+  \node[font=\small, align=center] at (2.7,2.05) {natural scenarios\\classified correctly};
+  \node[font=\scriptsize, align=center] at (2.7,1.20) {Without writing: ``to recycle'',\\``for compost'' or ``special point''.};
+  \node[font=\scriptsize, align=center, text=forest] at (2.7,0.45) {The app infers the recommendation.};
 \end{tikzpicture}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Benefits}
+\begin{frame}{What We Learned}
+\TimeTag{1 min}
 \begin{columns}[T]
 \column{0.33\textwidth}
 \begin{tikzpicture}
   \fill[white, rounded corners=8pt] (0,0) rectangle (3.8,4.7);
   \fill[leaf!40] (1.9,3.35) circle (0.6);
-  \node[font=\bfseries, align=center] at (1.9,2.35) {Fewer errors};
-  \node[font=\scriptsize, align=center] at (1.9,1.25) {The app explains\\whether to clean,\\separate, or reject.};
+  \node[font=\bfseries, align=center] at (1.9,2.35) {Vision alone\\is not enough};
+  \node[font=\scriptsize, align=center] at (1.9,1.25) {Context changes\\the final decision.};
 \end{tikzpicture}
 \column{0.33\textwidth}
 \begin{tikzpicture}
   \fill[white, rounded corners=8pt] (0,0) rectangle (3.8,4.7);
   \fill[sky] (1.9,3.35) circle (0.6);
-  \node[font=\bfseries, align=center] at (1.9,2.35) {More learning};
-  \node[font=\scriptsize, align=center] at (1.9,1.25) {Users learn at\\the exact moment\\of disposal.};
+  \node[font=\bfseries, align=center] at (1.9,2.35) {AI + rules\\is more useful};
+  \node[font=\scriptsize, align=center] at (1.9,1.25) {Not just a label:\\it turns into action.};
 \end{tikzpicture}
 \column{0.33\textwidth}
 \begin{tikzpicture}
   \fill[white, rounded corners=8pt] (0,0) rectangle (3.8,4.7);
   \fill[coral!45] (1.9,3.35) circle (0.6);
-  \node[font=\bfseries, align=center] at (1.9,2.35) {More safety};
-  \node[font=\scriptsize, align=center] at (1.9,1.25) {Batteries, chemicals,\\and broken glass\\trigger alerts.};
+  \node[font=\bfseries, align=center] at (1.9,2.35) {Users\\need clarity};
+  \node[font=\scriptsize, align=center] at (1.9,1.25) {Short phrases,\\concrete steps,\\simple alerts.};
 \end{tikzpicture}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Value Proposition and Innovation}
+% 7. Sales close
+\begin{frame}{Value Proposition}
+\TimeTag{1 min}
 \begin{tikzpicture}[font=\small]
-\fill[white, rounded corners=10pt] (0,0) rectangle (12.5,5.8);
-\node[font=\bfseries\Large, text=forest] at (6.25,5.15) {From classifying waste to guiding decisions};
-\draw[leaf, line width=2pt] (1.2,3.95) -- (11.3,3.95);
-\ValueCard{2.2}{Product}{Photo + text + plan}{sky}
-\ValueCard{5.1}{Impact}{Less contamination}{leaf!45}
-\ValueCard{8.0}{Model}{Keras + rules}{sand}
-\ValueCard{10.8}{Market}{Homes and schools}{coral!35}
-\node[align=center, font=\bfseries, text=forest, text width=11.2cm] at (6.25,0.42) {EcoSort turns an everyday doubt into the right environmental action in less than 5 seconds.};
+\fill[white, rounded corners=10pt] (0,0) rectangle (12.55,5.75);
+\node[font=\bfseries\Large, text=forest] at (6.27,5.05) {EcoSort turns confusion into environmental action};
+\draw[leaf, line width=2pt] (1.0,3.92) -- (11.55,3.92);
+  \fill[sky, rounded corners=7pt] (0.95,1.25) rectangle (3.25,3.55);
+  \node[font=\bfseries, align=center] at (2.1,2.95) {Product};
+  \node[font=\footnotesize, align=center] at (2.1,2.05) {Photo + text\\+ plan};
+  \fill[leaf!45, rounded corners=7pt] (3.75,1.25) rectangle (6.05,3.55);
+  \node[font=\bfseries, align=center] at (4.9,2.95) {Impact};
+  \node[font=\footnotesize, align=center] at (4.9,2.05) {Less\\contamination};
+  \fill[sand, rounded corners=7pt] (6.55,1.25) rectangle (8.85,3.55);
+  \node[font=\bfseries, align=center] at (7.7,2.95) {Innovation};
+  \node[font=\footnotesize, align=center] at (7.7,2.05) {Multimodal AI\\+ semantics};
+  \fill[coral!35, rounded corners=7pt] (9.25,1.25) rectangle (11.55,3.55);
+  \node[font=\bfseries, align=center] at (10.4,2.95) {Scale};
+  \node[font=\footnotesize, align=center] at (10.4,2.05) {Homes, campus\\and schools};
+\node[align=center, font=\bfseries, text=forest, text width=10.8cm] at (6.27,0.55) {A simple app for real users, built around\\a multimodal neural network.};
 \end{tikzpicture}
 \end{frame}
 
@@ -329,13 +331,15 @@ Semantic rules & Turn classes into actions. \\
   \fill[leaf!50] ([xshift=0.2cm,yshift=-0.5cm]current page.north west) circle (2.3cm);
   \fill[coral!70] ([xshift=-0.4cm,yshift=0.3cm]current page.south east) circle (1.7cm);
 \end{tikzpicture}
-\vspace{0.9cm}
+\TimeTag{1 min}
+\vspace{0.75cm}
 \begin{center}
-  \LogoMark[1.55]\\[0.45cm]
+  \AppLogo[1.8cm]\\[0.4cm]
   {\Huge\bfseries\textcolor{cream}{EcoSort}}\\[0.35cm]
-  {\Large\textcolor{sand}{It is not just about throwing away less.}}\\[0.15cm]
-  {\Large\textcolor{sand}{It is about deciding better.}}\\[0.8cm]
-  \Chip{cream}{Your waste, in the right place.}
+  {\Large\textcolor{sand}{It is not only about throwing away less.}}\\[0.12cm]
+  {\Large\textcolor{sand}{It is about deciding better.}}\\[0.75cm]
+  \Chip{cream}{Your waste, in the right place.}\\[0.45cm]
+  {\small\textcolor{cream}{Dario Pomasqui | Yachay Tech University}}
 \end{center}
 \end{frame}
 

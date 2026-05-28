@@ -47,6 +47,9 @@ CLASS_SPECIFIC_TEXTS = {
         "caja aplastada para reciclaje",
         "caja de jugo tetrapak vacia",
         "envase de jugo de carton",
+        "tetra pak de leche vacio",
+        "envase multicapa de jugo limpio",
+        "carton con grasa de comida",
     ],
     "clothes": [
         "ropa que ya no me queda",
@@ -71,6 +74,9 @@ CLASS_SPECIFIC_TEXTS = {
         "salieron de un control viejo",
         "pilas del mando remoto",
         "pila de control de tv",
+        "pilas AA usadas de un control antiguo",
+        "pilas Energizer descargadas",
+        "baterias Duracell de control remoto",
     ],
     "biological": [
         "cascara de fruta para compost",
@@ -87,6 +93,9 @@ CLASS_SPECIFIC_TEXTS = {
         "restos del almuerzo para organicos",
         "sobras de arroz y verduras",
         "residuos de cocina biodegradables",
+        "restos de verduras para compost",
+        "cascara de platano y naranja",
+        "sobras de cena para organicos",
     ],
     "metal": [
         "lata de aluminio limpia",
@@ -96,6 +105,8 @@ CLASS_SPECIFIC_TEXTS = {
         "lata de jugo vacia",
         "jugo en lata de aluminio",
         "bebida en lata recien comprada",
+        "lata energizante vacia",
+        "lata de bebida limpia para reciclar",
     ],
     "white-glass": [
         "frasco de vidrio limpio",
@@ -122,6 +133,9 @@ CLASS_SPECIFIC_TEXTS = {
         "residuo sanitario no reciclable",
         "papel higienico usado",
         "toalla sanitaria usada",
+        "medicamento vencido para farmacia",
+        "pastillas sobrantes no reciclables",
+        "aceite usado de cocina para punto limpio",
     ],
 }
 

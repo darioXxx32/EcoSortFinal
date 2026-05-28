@@ -17,6 +17,14 @@ from ecosort.keras_inference import EcoSortKerasInferenceEngine  # type: ignore
 from ecosort.rules import build_disposal_response, normalize_text  # type: ignore
 
 
+MULTIMODAL_CONTRACT = {
+    "core": "red neuronal multimodal",
+    "inputs": ["imagen", "descripcion_textual"],
+    "fusion": "vision + texto + reglas semanticas",
+    "purpose": "clasificar el residuo y ajustar la recomendacion por contexto real de uso",
+}
+
+
 @dataclass(slots=True)
 class ServicePrediction:
     mode: str
@@ -47,6 +55,7 @@ class HeuristicEngine:
         confidence = float(probabilities[best_label])
         recommendation = build_disposal_response(best_label, user_text, confidence)
         recommendation.update(build_semantic_enrichment(best_label, probabilities, self.catalog, semantic))
+        recommendation["multimodal_contract"] = MULTIMODAL_CONTRACT
         if semantic.intent_flags.get("sanitary"):
             recommendation.setdefault("text_flags", {})["sanitary"] = True
         return ServicePrediction(
@@ -66,6 +75,8 @@ class EcoSortService:
             "artifact_format": "semantic",
             "epochs_completed": 0,
             "test_accuracy": None,
+            "multimodal_inputs": MULTIMODAL_CONTRACT["inputs"],
+            "semantic_fusion": True,
         }
         self._heuristic = HeuristicEngine()
         self._real_engine: EcoSortInferenceEngine | None = None
@@ -108,6 +119,8 @@ class EcoSortService:
                     "test_accuracy": None,
                     "load_error": str(exc),
                     "hint": "Inicia el backend con scripts/start_api.ps1 o con ml/.venv-keras para activar best_model.keras.",
+                    "multimodal_inputs": MULTIMODAL_CONTRACT["inputs"],
+                    "semantic_fusion": True,
                 }
 
         if self._real_engine is None and checkpoint_path.exists() and tokenizer_path.exists():
@@ -121,6 +134,8 @@ class EcoSortService:
                     "artifact": str(checkpoint_path),
                     "epochs_completed": None,
                     "test_accuracy": None,
+                    "multimodal_inputs": MULTIMODAL_CONTRACT["inputs"],
+                    "semantic_fusion": True,
                 }
             except Exception as exc:
                 self._real_engine = None
@@ -132,6 +147,8 @@ class EcoSortService:
                     "test_accuracy": None,
                     "load_error": str(exc),
                     "hint": "No se pudo activar el modelo neuronal; se usa respaldo semantico.",
+                    "multimodal_inputs": MULTIMODAL_CONTRACT["inputs"],
+                    "semantic_fusion": True,
                 }
 
     def _load_model_info(self, metadata_path: Path | None, artifact_path: Path) -> dict[str, Any]:
@@ -147,6 +164,8 @@ class EcoSortService:
                     "test_loss": metrics.get("loss"),
                     "image_size": metadata.get("data_config", {}).get("image_size"),
                     "classes": metadata.get("model_config", {}).get("num_classes"),
+                    "multimodal_inputs": MULTIMODAL_CONTRACT["inputs"],
+                    "semantic_fusion": True,
                 }
             except Exception:
                 pass
@@ -155,6 +174,8 @@ class EcoSortService:
             "artifact": str(artifact_path),
             "epochs_completed": None,
             "test_accuracy": None,
+            "multimodal_inputs": MULTIMODAL_CONTRACT["inputs"],
+            "semantic_fusion": True,
         }
 
     def predict(self, image_path: str | Path, user_text: str) -> dict[str, Any]:
@@ -222,28 +243,43 @@ class EcoSortService:
                     merged_scores["cardboard"] *= 0.28
 
         if semantic.intent_flags.get("sanitary"):
-            merged_scores["trash"] += 1.2
-            merged_scores["clothes"] *= 0.03
-            merged_scores["shoes"] *= 0.03
-            merged_scores["paper"] *= 0.30
-            merged_scores["plastic"] *= 0.35
+            merged_scores["trash"] += 3.25
+            merged_scores["clothes"] *= 0.02
+            merged_scores["shoes"] *= 0.02
+            merged_scores["paper"] *= 0.16
+            merged_scores["cardboard"] *= 0.16
+            merged_scores["plastic"] *= 0.22
+            merged_scores["biological"] *= 0.10
             mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
 
         if semantic.matched_terms["battery"]:
-            merged_scores["battery"] += 1.45
-            merged_scores["paper"] *= 0.06
-            merged_scores["cardboard"] *= 0.06
-            merged_scores["clothes"] *= 0.16
-            merged_scores["shoes"] *= 0.16
-            merged_scores["plastic"] *= 0.22
+            merged_scores["battery"] += 4.20
+            merged_scores["paper"] *= 0.025
+            merged_scores["cardboard"] *= 0.025
+            merged_scores["clothes"] *= 0.08
+            merged_scores["shoes"] *= 0.08
+            merged_scores["plastic"] *= 0.12
+            merged_scores["metal"] *= 0.18
+            merged_scores["biological"] *= 0.06
             mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
 
         if semantic.intent_flags.get("compost") and semantic.matched_terms["biological"]:
-            merged_scores["biological"] += 0.95
-            merged_scores["cardboard"] *= 0.18
-            merged_scores["paper"] *= 0.25
-            merged_scores["plastic"] *= 0.45
-            merged_scores["metal"] *= 0.45
+            merged_scores["biological"] += 2.85
+            merged_scores["cardboard"] *= 0.10
+            merged_scores["paper"] *= 0.14
+            merged_scores["plastic"] *= 0.28
+            merged_scores["metal"] *= 0.28
+            merged_scores["trash"] *= 0.45
+            mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
+
+        if semantic.intent_flags.get("hazardous") and not semantic.matched_terms["battery"]:
+            merged_scores["trash"] += 0.75
+            if semantic.matched_terms["plastic"]:
+                merged_scores["plastic"] += 0.40
+            if semantic.matched_terms["metal"]:
+                merged_scores["metal"] += 0.30
+            for label in {"paper", "cardboard", "biological"}:
+                merged_scores[label] *= 0.45
             mode = "hybrid_keras_text_boost" if self.mode == "hybrid_keras" else "hybrid_text_boost"
 
         if not semantic.matched_terms["battery"]:
@@ -265,14 +301,35 @@ class EcoSortService:
                 merged_scores["metal"] *= 0.45
 
         if semantic.image_scores.get("metal", 0.0) >= 1.5 or semantic.matched_terms["metal"]:
-            merged_scores["metal"] += 0.16
+            merged_scores["metal"] += 0.70 if semantic.matched_terms["metal"] else 0.16
+            if semantic.matched_terms["metal"]:
+                merged_scores["paper"] *= 0.25
+                merged_scores["cardboard"] *= 0.28
 
         if semantic.image_scores.get("plastic", 0.0) >= 1.5 or semantic.matched_terms["plastic"]:
-            merged_scores["plastic"] += 0.14
+            merged_scores["plastic"] += 0.55 if semantic.matched_terms["plastic"] else 0.14
             if semantic.matched_terms["plastic"] and not semantic.matched_terms["paper"]:
                 merged_scores["paper"] *= 0.45
             if semantic.matched_terms["plastic"] and not semantic.matched_terms["cardboard"]:
                 merged_scores["cardboard"] *= 0.55
+
+        if semantic.matched_terms["brown-glass"]:
+            merged_scores["brown-glass"] += 1.20
+            merged_scores["white-glass"] *= 0.38
+            merged_scores["green-glass"] *= 0.55
+        elif semantic.matched_terms["green-glass"]:
+            merged_scores["green-glass"] += 1.20
+            merged_scores["white-glass"] *= 0.42
+            merged_scores["brown-glass"] *= 0.55
+        elif semantic.matched_terms["white-glass"]:
+            merged_scores["white-glass"] += 0.60
+
+        for glass_label in GLASS_LABELS:
+            if semantic.matched_terms[glass_label]:
+                merged_scores[glass_label] += 0.55
+                merged_scores["paper"] *= 0.45
+                merged_scores["cardboard"] *= 0.45
+                merged_scores["plastic"] *= 0.70
 
         if semantic.reusable_hint:
             merged_scores["trash"] *= 0.5
@@ -301,6 +358,13 @@ class EcoSortService:
 
         recommendation = build_disposal_response(final_label, user_text, final_confidence)
         recommendation.update(build_semantic_enrichment(final_label, final_probabilities, self.catalog, semantic))
+        recommendation["multimodal_contract"] = MULTIMODAL_CONTRACT
+        recommendation["fusion_trace"] = {
+            "vision_label": model_label,
+            "semantic_label": heuristic_label,
+            "final_label": final_label,
+            "strategy": mode,
+        }
         if semantic.intent_flags.get("sanitary"):
             recommendation.setdefault("text_flags", {})["sanitary"] = True
         recommendation["model_artifact"] = self.model_info.get("artifact_format")

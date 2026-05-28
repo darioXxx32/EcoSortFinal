@@ -117,8 +117,55 @@ def normalize_text(text: str) -> str:
             "energizante",
         ]
     )
+    tetrapak_context = any(
+        phrase in text
+        for phrase in [
+            "tetrapak",
+            "tetra pak",
+            "tetra pack",
+            "caja de jugo",
+            "carton de jugo",
+            "caja de leche",
+            "carton de leche",
+            "envase de jugo",
+        ]
+    )
+    glass_beverage_context = any(
+        phrase in text
+        for phrase in [
+            "vidrio",
+            "botella verde",
+            "botella cafe",
+            "botella ambar",
+            "frasco",
+        ]
+    )
+    metal_beverage_context = any(
+        phrase in text
+        for phrase in [
+            "lata",
+            "en lata",
+            "aluminio",
+            "energizante en lata",
+        ]
+    )
     if beverage_context:
-        expansions.append("bebida envase botella plastico lata aluminio")
+        if metal_beverage_context:
+            expansions.append("bebida lata aluminio envase metalico")
+        elif tetrapak_context:
+            expansions.append("bebida carton tetrapak multicapa")
+        elif glass_beverage_context:
+            if any(phrase in text for phrase in ["vidrio cafe", "vidrio ambar", "vidrio marron", "botella cafe", "botella ambar"]):
+                expansions.append("bebida vidrio cafe ambar botella cafe")
+            elif any(phrase in text for phrase in ["vidrio verde", "botella verde"]):
+                expansions.append("bebida vidrio verde botella verde")
+            else:
+                expansions.append("bebida vidrio transparente")
+        else:
+            expansions.append("bebida envase botella plastico")
+
+    if tetrapak_context:
+        expansions.append("carton tetrapak multicapa caja bebida")
 
     remote_control_context = any(
         phrase in text
@@ -136,6 +183,10 @@ def normalize_text(text: str) -> str:
     )
     if remote_control_context:
         expansions.append("pila pilas bateria control remoto punto limpio residuo peligroso")
+
+    battery_brand_context = any(phrase in text for phrase in ["energizer", "duracell", "pila aa", "pila aaa", "pilas aa", "pilas aaa"])
+    if battery_brand_context:
+        expansions.append("pila pilas bateria aa aaa punto limpio residuo peligroso")
 
     food_waste_context = any(
         phrase in text
@@ -159,6 +210,22 @@ def normalize_text(text: str) -> str:
     )
     if food_waste_context:
         expansions.append("organico compost comida sobras restos cocina biodegradable")
+
+    special_waste_context = any(
+        phrase in text
+        for phrase in [
+            "medicamento",
+            "medicamentos",
+            "medicina vencida",
+            "pastillas",
+            "jarabe vencido",
+            "aceite usado",
+            "aceite de cocina",
+            "aceite",
+        ]
+    )
+    if special_waste_context:
+        expansions.append("residuo especial peligroso punto limpio no reciclable")
 
     if expansions:
         text = f"{text} {' '.join(expansions)}"

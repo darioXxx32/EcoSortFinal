@@ -20,6 +20,8 @@
         "pila boton",
         "bateria recargable",
         "pila de litio",
+        "pila AA",
+        "pila AAA",
         "power bank",
         "bateria externa",
         "bateria de laptop",
@@ -27,6 +29,9 @@
         "pilas de control remoto",
         "pilas de control antiguo",
         "pilas del mando remoto"
+        ,
+        "pilas Energizer",
+        "pilas Duracell"
       ],
       "text_hints": [
         "venia de un control remoto",
@@ -39,6 +44,10 @@
         "es una bateria pequena",
         "es electronico",
         "necesita punto limpio"
+        ,
+        "son pilas AA usadas",
+        "son pilas de marca Energizer",
+        "son baterias Duracell descargadas"
       ]
     },
     "biological": {
@@ -65,6 +74,10 @@
         "sobras de la cena",
         "restos del almuerzo",
         "desperdicios de cocina"
+        ,
+        "restos de verduras",
+        "sobras de arroz",
+        "cascara de platano"
       ],
       "text_hints": [
         "tenia comida",
@@ -77,6 +90,10 @@
         "sobras de comida de ayer",
         "restos de la cena",
         "desperdicios de comida"
+        ,
+        "sobras de arroz y verduras",
+        "restos vegetales para compost",
+        "comida de ayer para organicos"
       ]
     },
     "brown-glass": {
@@ -124,7 +141,11 @@
         ,
         "carton prensado",
         "tetrapak",
-        "cartulina"
+        "cartulina",
+        "tetra pak",
+        "tetra pack",
+        "envase de jugo tetrapak",
+        "caja de leche"
       ],
       "text_hints": [
         "es una caja",
@@ -132,7 +153,10 @@
         "esta seco",
         "tenia comida",
         "es carton corrugado",
-        "es un empaque"
+        "es un empaque",
+        "es caja de jugo tetrapak",
+        "envase multicapa de leche",
+        "carton limpio y seco"
       ]
     },
     "clothes": {
@@ -209,6 +233,8 @@
         "tapa metalica",
         "bandeja de aluminio",
         "lata de atun",
+        "lata de jugo",
+        "lata energizante",
         "clip metalico",
         "grapa",
         "chatarra pequena",
@@ -220,7 +246,10 @@
         "tenia comida",
         "esta limpio",
         "es aluminio",
-        "es metalico"
+        "es metalico",
+        "es jugo en lata",
+        "es bebida energizante en lata",
+        "lata vacia y limpia"
       ]
     },
     "paper": {
@@ -272,6 +301,8 @@
         "recipiente",
         "tapa plastica",
         "envase de yogurt",
+        "botella de aceite",
+        "envase de shampoo",
         "bolsa plastica",
         "botella PET"
         ,
@@ -286,7 +317,10 @@
         "tenia gaseosa",
         "esta sucio",
         "es un envase PET",
-        "es un empaque plastico"
+        "es un empaque plastico",
+        "botella de aceite vacia",
+        "envase plastico de limpieza",
+        "bolsa plastica limpia"
       ]
     },
     "shoes": {
@@ -343,6 +377,10 @@
         "colilla"
         ,
         "chicle",
+        "medicamento",
+        "medicamentos vencidos",
+        "aceite usado",
+        "pastillas vencidas",
         "ceramica rota",
         "loza rota"
       ],
@@ -358,6 +396,11 @@
         "mi hijo no los uso",
         "estan limpios pero son panales",
         "es de un solo uso"
+        ,
+        "medicamento vencido para farmacia",
+        "aceite usado de cocina",
+        "pastillas sobrantes",
+        "residuo especial no reciclable"
       ]
     },
     "white-glass": {

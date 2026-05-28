@@ -72,6 +72,11 @@ INTENT_PATTERNS: dict[str, list[str]] = {
         "coser",
         "remendar",
         "pegar",
+        "despegado",
+        "despegada",
+        "suela despegada",
+        "suela despegado",
+        "suela suelta",
         "cambiar cierre",
         "cambiar suela",
         "rota pero sirve",
@@ -133,6 +138,17 @@ INTENT_PATTERNS: dict[str, list[str]] = {
         "inflamada",
         "oxidado",
         "oxidada",
+        "medicamento",
+        "medicamentos",
+        "pastilla",
+        "pastillas",
+        "jarabe vencido",
+        "medicina vencida",
+        "aceite",
+        "aceite usado",
+        "aceite de cocina",
+        "insecticida",
+        "veneno",
     ],
     "sanitary": [
         "panal",
@@ -316,6 +332,9 @@ ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("carton prensado", 6.5, "Carton prensado"),
         ("empaque tetra", 5.5, "Empaque multicapa"),
         ("tetrapak", 5.5, "Empaque multicapa"),
+        ("tetra pak", 5.8, "Empaque multicapa"),
+        ("tetra pack", 5.8, "Empaque multicapa"),
+        ("envase tetrapak", 6.0, "Empaque multicapa"),
         ("carpeta de carton", 7.0, "Carpeta de carton"),
         ("folder de carton", 7.0, "Folder de carton"),
     ],
@@ -436,6 +455,14 @@ ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("bateria externa", 8.0, "Bateria externa"),
         ("aa", 7.0, "Pila AA"),
         ("aaa", 7.0, "Pila AAA"),
+        ("pila aa", 9.0, "Pila AA"),
+        ("pila aaa", 9.0, "Pila AAA"),
+        ("pilas aa", 9.5, "Pilas AA"),
+        ("pilas aaa", 9.5, "Pilas AAA"),
+        ("baterias aa", 9.5, "Baterias AA"),
+        ("baterias aaa", 9.5, "Baterias AAA"),
+        ("energizer", 8.0, "Pila"),
+        ("duracell", 8.0, "Pila"),
         ("control remoto", 8.0, "Pila de control remoto"),
         ("control antiguo", 10.0, "Pilas de control antiguo"),
         ("control viejo", 10.0, "Pilas de control antiguo"),
@@ -607,6 +634,10 @@ EXTRA_ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("caja de leche", 7.0, "Empaque multicapa"),
         ("carton de leche", 7.0, "Empaque multicapa"),
         ("caja de jugo", 7.0, "Empaque multicapa"),
+        ("envase de jugo tetrapak", 8.0, "Empaque multicapa"),
+        ("envase de leche tetrapak", 8.0, "Empaque multicapa"),
+        ("tetra pak de jugo", 8.0, "Empaque multicapa"),
+        ("tetra pack de leche", 8.0, "Empaque multicapa"),
         ("rollo papel higienico", 8.0, "Tubo de carton"),
         ("tubo de papel", 8.0, "Tubo de carton"),
         ("base de pizza", 7.5, "Caja de pizza"),
@@ -700,6 +731,8 @@ EXTRA_ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("vidrio marron", 8.5, "Vidrio ambar"),
         ("envase ambar", 8.5, "Envase ambar"),
         ("frasco cafe", 8.5, "Frasco ambar"),
+        ("botella de vidrio cafe", 9.5, "Botella cafe"),
+        ("botella vidrio cafe", 9.5, "Botella cafe"),
         ("botella de cerveza cafe", 8.5, "Botella de cerveza"),
     ],
     "battery": [
@@ -723,6 +756,12 @@ EXTRA_ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("bateria de camara", 8.5, "Bateria de camara"),
         ("bateria de reloj", 8.5, "Pila boton"),
         ("pila reloj", 8.5, "Pila boton"),
+        ("pilas energizer", 10.0, "Pilas"),
+        ("baterias energizer", 10.0, "Baterias"),
+        ("pilas duracell", 10.0, "Pilas"),
+        ("baterias duracell", 10.0, "Baterias"),
+        ("pilas de control antiguo", 10.5, "Pilas de control antiguo"),
+        ("pilas de control remoto usadas", 10.5, "Pilas de control remoto"),
     ],
     "biological": [
         ("cascara de platano", 8.5, "Cascara de platano"),
@@ -796,7 +835,7 @@ EXTRA_ALIASES: dict[str, list[tuple[str, float, str]]] = {
         ("servilleta usada", 8.5, "Servilleta usada"),
         ("papel sucio", 8.0, "Papel sucio"),
         ("papel con grasa", 8.5, "Papel con grasa"),
-        ("pañal", 9.0, "Panal"),
+        ("panal limpio", 9.0, "Panal"),
         ("panal sucio", 9.0, "Panal"),
         ("panales", 9.2, "Panales"),
         ("panales sucios", 9.5, "Panales"),
@@ -1013,6 +1052,17 @@ DEMO_ALIAS_PACK: dict[str, list[tuple[str, float, str]]] = {
         ("cinta adhesiva", 7.0, "Cinta adhesiva"),
         ("papel plastificado", 7.5, "Papel plastificado"),
         ("papel encerado", 7.5, "Papel encerado"),
+        ("medicamento", 8.5, "Medicamento vencido o sobrante"),
+        ("medicamentos", 8.5, "Medicamentos vencidos o sobrantes"),
+        ("medicina", 8.0, "Medicamento"),
+        ("medicina vencida", 9.0, "Medicamento vencido"),
+        ("pastillas", 8.5, "Pastillas"),
+        ("jarabe vencido", 9.0, "Jarabe vencido"),
+        ("aceite usado", 8.0, "Aceite usado"),
+        ("aceite", 7.5, "Aceite usado"),
+        ("aceite de cocina usado", 8.5, "Aceite de cocina usado"),
+        ("panal sin usar", 9.0, "Panal"),
+        ("panales limpios", 9.0, "Panales"),
     ],
 }
 
@@ -1043,6 +1093,8 @@ CONTEXT_BOOSTS: dict[str, list[tuple[list[str], float, str]]] = {
         (["carton", "seco"], 9.0, "Carton seco"),
         (["carton", "grasa"], 9.0, "Carton con grasa"),
         (["caja", "envio"], 9.0, "Caja de envio"),
+        (["jugo", "tetrapak"], 8.5, "Empaque multicapa"),
+        (["leche", "tetrapak"], 8.5, "Empaque multicapa"),
     ],
     "plastic": [
         (["botella", "pet"], 10.0, "Botella PET"),
@@ -1075,6 +1127,10 @@ CONTEXT_BOOSTS: dict[str, list[tuple[list[str], float, str]]] = {
     "battery": [
         (["power", "bank"], 10.0, "Power bank"),
         (["pila", "usada"], 9.0, "Pila usada"),
+        (["pilas", "aa"], 10.5, "Pilas AA"),
+        (["pilas", "aaa"], 10.5, "Pilas AAA"),
+        (["baterias", "aa"], 10.5, "Baterias AA"),
+        (["baterias", "aaa"], 10.5, "Baterias AAA"),
         (["bateria", "celular"], 9.0, "Bateria de celular"),
         (["bateria", "hinchada"], 10.0, "Bateria danada"),
         (["pila", "control"], 9.0, "Pila de control remoto"),
@@ -1105,16 +1161,20 @@ CONTEXT_BOOSTS: dict[str, list[tuple[list[str], float, str]]] = {
         (["papel", "grasa"], 9.0, "Papel con grasa"),
         (["empaque", "metalizado"], 8.5, "Empaque metalizado"),
         (["muy", "sucio"], 8.0, "Residuo contaminado"),
+        (["medicamento", "vencido"], 10.0, "Medicamento vencido"),
+        (["medicina", "vencida"], 10.0, "Medicina vencida"),
+        (["aceite", "usado"], 9.0, "Aceite usado"),
+        (["aceite", "cocina"], 9.0, "Aceite de cocina usado"),
     ],
 }
 
 MATERIAL_TERMS = {
     "paper": {"papel", "hoja", "hojas", "cuaderno", "libreta", "escuela", "colegio", "apuntes", "tarea", "escrita", "escritas", "impreso", "fotocopia", "folio"},
-    "cardboard": {"carton", "caja", "corrugado", "huevera", "tetrapak"},
+    "cardboard": {"carton", "caja", "corrugado", "huevera", "tetrapak", "tetra", "pack", "pak"},
     "plastic": {"plastico", "plastica", "pet", "botella", "envase", "bolsa", "tupper", "blister"},
     "metal": {"metal", "metalico", "metalica", "lata", "aluminio", "aerosol", "clavo", "tornillo", "llave"},
     "glass": {"vidrio", "frasco", "cristal", "botella"},
-    "battery": {"bateria", "baterias", "pila", "pilas", "power", "bank", "litio", "control", "mando"},
+    "battery": {"bateria", "baterias", "pila", "pilas", "power", "bank", "litio", "control", "mando", "energizer", "duracell", "aa", "aaa"},
 }
 
 APPAREL_TERMS = {
@@ -1478,7 +1538,8 @@ def analyze_semantics(normalize_text_fn: Any, image_path: str | Path, user_text:
         scores[label] += score
 
     beverage_context = _has_any(normalized, BEVERAGE_TERMS)
-    if beverage_context and not any(matched_terms[label] for label in ["paper", "cardboard"]):
+    has_packaging_context = any(matched_terms[label] for label in ["paper", "cardboard", *GLASS_LABELS])
+    if beverage_context and not has_packaging_context:
         scores["metal"] += 1.6 + min(image_scores.get("metal", 0.0), 2.0)
         scores["plastic"] += 1.2 + min(image_scores.get("plastic", 0.0), 1.6)
         scores["cardboard"] += 0.6
@@ -2213,7 +2274,7 @@ def build_user_guidance(label_key: str, detected_item: str, semantic: SemanticSi
         ]
         selected["impact_note"] = "Cuando hay volumen, separar por material mejora la recuperacion y hace mas rapida la entrega."
 
-    if intents["hazardous"] and label_key in {"plastic", "metal", "white-glass", "green-glass", "brown-glass", "battery"}:
+    if intents["hazardous"] and label_key in {"plastic", "metal", "white-glass", "green-glass", "brown-glass"}:
         selected["primary_outcome"] = "EcoSort detecta posible riesgo: confirma manejo especial antes de reciclar."
         selected["preparation_steps"] = [
             "No mezcles este residuo con reciclaje comun si tuvo quimicos o esta danado.",
@@ -2222,6 +2283,21 @@ def build_user_guidance(label_key: str, detected_item: str, semantic: SemanticSi
             "Recicla solo si el envase esta vacio, limpio y aceptado localmente.",
         ]
         selected["useful_options"] = ["Punto limpio", "Recoleccion especial", "Reciclaje solo si esta limpio y aceptado"]
+
+    if intents["hazardous"] and label_key == "trash":
+        selected["primary_outcome"] = "Residuo especial: no debe mezclarse con reciclables ni botarse sin revisar la ruta local."
+        selected["preparation_steps"] = [
+            "Mantenlo cerrado y separado de comida, papel y envases reciclables.",
+            "No lo vacies al desague ni lo mezcles con compost.",
+            "Busca farmacia, punto limpio o recoleccion especial si es medicamento, aceite o quimico.",
+            "Usa basura comun solo si tu municipio no ofrece otra ruta y el residuo esta bien contenido.",
+        ]
+        selected["useful_options"] = ["Farmacia o punto limpio", "Recoleccion especial", "Contenedor seguro temporal"]
+        selected["avoid"] = [
+            "No va a reciclaje seco.",
+            "No va a compost.",
+            "No verter aceites o quimicos al desague.",
+        ]
 
     if intents["sharp"] and label_key in {"metal", "white-glass", "green-glass", "brown-glass", "trash"}:
         selected["primary_outcome"] = "EcoSort detecta riesgo de corte: primero hay que proteger a quien manipula el residuo."

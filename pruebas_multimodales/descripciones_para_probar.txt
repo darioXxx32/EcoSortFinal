@@ -1,0 +1,82 @@
+EcoSort - descripciones naturales para probar multimodalidad
+Estas descripciones NO le dicen a la app que recomiende compost, reciclaje, donacion o punto limpio.
+La app debe inferir la accion con imagen + texto + reglas semanticas.
+
+01 | imagenes/01_botella_plastica_limpia.jpg
+Descripcion a escribir: Botella de agua vacia y limpia.
+Debe orientar a: plastic | La app debe recomendar reciclaje de plastico/PET limpio sin que el usuario diga 'reciclar'.
+Resultado actual: plastic (95.6%) - Botella plastica de agua: puede recuperarse si esta limpio, vacio y separado.
+Accion que propone la app: Confirma que este vacio y sin liquidos.
+
+02 | imagenes/02_envase_plastico_con_quimicos.jpg
+Descripcion a escribir: Envase plastico que tenia cloro y aun huele fuerte.
+Debe orientar a: plastic | La app debe cambiar la recomendacion por riesgo quimico: limpiar, separar o punto limpio.
+Resultado actual: plastic (73.2%) - Envase plastico: maneja con cuidado y separa antes de entregar.
+Accion que propone la app: No mezcles este residuo con reciclaje comun si tuvo quimicos o esta danado.
+
+03 | imagenes/03_pilas_control_antiguo.jpg
+Descripcion a escribir: Pilas AA de un control antiguo, estan descargadas.
+Debe orientar a: battery | La app debe inferir punto limpio y bloquear reciclaje domestico.
+Resultado actual: battery (99.9%) - Pilas de control antiguo: llevalo a punto limpio; no lo mezcles con basura comun.
+Accion que propone la app: No la abras, aplastes ni perfores.
+
+04 | imagenes/04_sobras_cena.jpg
+Descripcion a escribir: Residuos de la cena del dia anterior.
+Debe orientar a: biological | La app debe inferir organicos/compost sin que el usuario escriba compost.
+Resultado actual: biological (91.5%) - Sobras de comida: separalo para compost u organicos si tu ciudad lo permite.
+Accion que propone la app: Retira plasticos, stickers, ligas o empaques.
+
+05 | imagenes/05_botella_cafe_vacia.jpg
+Descripcion a escribir: Botella cafe vacia, venia de una bebida.
+Debe orientar a: brown-glass | La app debe reconocer vidrio cafe y recomendar flujo de vidrio.
+Resultado actual: brown-glass (72.9%) - Vidrio cafe: puede recuperarse si esta limpio, vacio y separado.
+Accion que propone la app: Confirma que este vacio y sin liquidos.
+
+06 | imagenes/06_caja_jugo_vacia.jpg
+Descripcion a escribir: Caja de jugo vacia y seca.
+Debe orientar a: cardboard | La app debe inferir carton/tetrapak o empaque multicapa sin que el usuario diga tetrapak.
+Resultado actual: cardboard (96.7%) - Caja de carton: puede recuperarse si esta limpio, vacio y separado.
+Accion que propone la app: Aplasta la caja para ahorrar espacio.
+
+07 | imagenes/07_ropa_no_me_queda.jpg
+Descripcion a escribir: Ropa que ya no me queda, esta limpia.
+Debe orientar a: clothes | La app debe inferir donacion/reuso antes de botar.
+Resultado actual: clothes (72.2%) - Prenda para donar: reusar, donar o reparar vale mas que botar.
+Accion que propone la app: Revisa que no tenga humedad, mal olor fuerte o contaminacion.
+
+08 | imagenes/08_botella_verde_vacia.jpg
+Descripcion a escribir: Botella verde vacia y limpia.
+Debe orientar a: green-glass | La app debe reconocer vidrio verde y recomendar reciclaje de vidrio.
+Resultado actual: green-glass (81.5%) - Botella verde: puede recuperarse si esta limpio, vacio y separado.
+Accion que propone la app: Confirma que este vacio y sin liquidos.
+
+09 | imagenes/09_lata_jugo_vacia.jpg
+Descripcion a escribir: Jugo en lata, esta vacia.
+Debe orientar a: metal | La app debe clasificar metal/lata y recomendar limpieza o compactacion si aplica.
+Resultado actual: metal (97.4%) - Lata de bebida: puede recuperarse si esta limpio, vacio y separado.
+Accion que propone la app: Confirma que este vacio y sin liquidos.
+
+10 | imagenes/10_hojas_con_nombre.jpg
+Descripcion a escribir: Hojas de escuela escritas con mi nombre.
+Debe orientar a: paper | La app debe sugerir proteger datos personales antes de reciclar.
+Resultado actual: paper (98.5%) - Hojas escolares escritas: puede recuperarse si esta limpio, vacio y separado.
+Accion que propone la app: Separa papeles limpios y secos.
+
+11 | imagenes/11_zapatos_suela_despegada.jpg
+Descripcion a escribir: Zapatos usados con la suela despegada.
+Debe orientar a: shoes | La app debe inferir reparacion o reciclaje especializado de calzado.
+Resultado actual: shoes (93.9%) - Zapatos: puede recuperarse si esta limpio, vacio y separado.
+Accion que propone la app: Identifica si el dano es reparable: costura, cierre, boton, suela o pegado.
+
+12 | imagenes/12_panales_limpios.jpg
+Descripcion a escribir: Panales de mi hijo, estan limpios.
+Debe orientar a: trash | La app debe inferir residuo sanitario y bloquear compost, donacion y reciclaje.
+Resultado actual: trash (95.4%) - Panal sanitario: cierre seguro y basura comun; no va a donar, compost ni reciclaje.
+Accion que propone la app: No lo abras ni lo mezcles con reciclaje.
+
+13 | imagenes/13_frasco_transparente_vacio.jpg
+Descripcion a escribir: Frasco transparente vacio y limpio.
+Debe orientar a: white-glass | La app debe reconocer vidrio transparente y sugerir reuso o reciclaje de vidrio.
+Resultado actual: white-glass (93.1%) - Frasco de vidrio transparente: puede recuperarse si esta limpio, vacio y separado.
+Accion que propone la app: Confirma que este vacio y sin liquidos.
+

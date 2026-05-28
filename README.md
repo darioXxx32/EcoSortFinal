@@ -1,137 +1,119 @@
 # EcoSort
 
-EcoSort es una app multimodal de inteligencia artificial para clasificar residuos a partir de una foto y un texto corto del usuario. La solución está pensada para una presentación tipo Shark Tank: fácil de demostrar, con impacto ambiental real y una arquitectura técnica defendible en clase.
+EcoSort is a multimodal AI mobile application that helps users decide what to do with everyday waste. The user provides two inputs: a photo of the item and a short text description. The system combines visual recognition, text understanding, and semantic rules to recommend a practical action such as recycle, clean first, donate, compost, discard safely, or take the item to a special collection point.
 
-## Qué resuelve
+## Why It Matters
 
-Muchas personas quieren reciclar, pero fallan justo en el momento de decidir dónde botar algo. EcoSort convierte esa duda en una decisión inmediata:
+Many recycling mistakes happen because people are unsure what to do at the exact moment they are holding an item. A clean bottle, a chemical container, a greasy cardboard box, a battery, and food leftovers should not receive the same recommendation. EcoSort focuses on turning that moment of doubt into a clear environmental action.
 
-- identifica el tipo de residuo,
-- indica si es reciclable o no,
-- explica cómo desecharlo,
-- muestra un nivel de confianza.
+## Main Features
 
-La versión actual mantiene 12 clases visuales base y una capa semántica ampliada que cubre 562 objetos, descripciones, intenciones y alias frecuentes.
+- Multimodal input: image + user description.
+- Neural network pipeline for waste classification.
+- Semantic context layer for real disposal guidance.
+- Mobile interface built with Expo and React Native.
+- FastAPI backend for model inference.
+- Recommendations adapted to the detected item and context.
+- Educational actions, tips, and user-friendly explanations.
 
-## Modalidades
+## Multimodal AI Design
 
-- `Imagen`: foto tomada o seleccionada desde el celular.
-- `Texto`: nota breve como `tenía comida`, `venía de un producto de limpieza` o `está sucio`.
+EcoSort uses two synchronized modalities:
 
-## Arquitectura del proyecto
+- Image: the app analyzes the visual appearance of the waste item.
+- Text: the app reads a short user description, such as whether the item is clean, greasy, sanitary, chemical, old, reusable, or organic.
+
+The model fuses both signals to improve the final decision. This is important because the same visible object can require different actions depending on context. For example, a clean bottle may be recyclable, while a bottle with chemical residue should be treated as special waste.
+
+## Project Structure
 
 ```text
-final/
-├── garbage_classification/        # dataset original de imágenes
-├── data/metadata/                 # taxonomía de residuos y reglas de negocio
-├── ml/                            # preparación, entrenamiento, evaluación y exportación
-├── backend/                       # API FastAPI para inferencia y recomendaciones
-├── mobile/                        # app Expo / React Native
-├── docs/                          # informe IEEE, pitch Shark Tank y arquitectura
-└── scripts/                       # automatización en PowerShell
+backend/              FastAPI inference service
+mobile/               Expo React Native application
+ml/                   Training and model utilities
+data/metadata/        Class and object metadata
+scripts/              Setup, training, and launch scripts
+presentacion/         Shark Tank presentation source and PDF
+docs/pitch/           Pitch script for the final presentation
 ```
 
-## Flujo técnico
+Large artifacts such as datasets, trained model files, virtual environments, build outputs, and generated reports are intentionally excluded from version control.
 
-1. `ml` escanea `garbage_classification/`.
-2. Se generan anotaciones multimodales con texto sintético controlado a partir de la clase real del residuo.
-3. Se entrena un modelo multimodal en PyTorch:
-   - encoder visual CNN ligero,
-   - encoder textual con embeddings + BiGRU,
-   - fusión tardía con capa clasificadora.
-4. `backend` carga el checkpoint y combina la predicción con reglas de reciclaje y una capa semantica hibrida.
-5. `mobile` consume la API y presenta el resultado para la demo.
+## Requirements
 
-## Requisitos sugeridos
+- Python 3.10 or newer
+- Node.js and npm
+- Expo Go or an Android device/emulator
+- PowerShell on Windows for the provided helper scripts
 
-- Python `3.11+`
-- Node `20+`
-- npm `10+`
+## Quick Start
 
-Nota: en esta máquina hay Python `3.14`, lo que vuelve poco recomendable TensorFlow; por eso el proyecto quedó orientado a PyTorch + ONNX/FastAPI.
-
-## Inicio rápido
-
-### 1. Preparar el dataset multimodal
+### 1. Install backend dependencies
 
 ```powershell
-cd C:\Users\User\Desktop\final
-python -m ml.src.ecosort.prepare_data --dataset-root .\garbage_classification --output-dir .\ml\artifacts\data
+.\scripts\setup_backend.ps1
 ```
 
-El pipeline actual genera varias notas sinteticas por imagen y separa los splits por imagen antes de expandir variantes. Esto aumenta material textual sin contaminar train/val/test.
-
-### 2. Entrenar el modelo
+### 2. Start the API
 
 ```powershell
-cd C:\Users\User\Desktop\final\ml
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python -m ecosort.train --annotations ..\ml\artifacts\data --epochs 8 --batch-size 32
+.\scripts\start_api.ps1
 ```
 
-Para un entrenamiento mas robusto orientado a reducir falsos positivos, tambien puedes usar:
+The API listens on port `8000`. The script prints the local network URLs that can be used from a phone.
+
+To verify the API, open:
+
+```text
+http://<your-local-ip>:8000/health
+```
+
+### 3. Start the mobile app
+
+Open a second terminal and run:
 
 ```powershell
-cd C:\Users\User\Desktop\final
-.\scripts\train_pro.ps1
+.\scripts\start_mobile.ps1
 ```
 
-### 2b. Entrenar/exportar modelo `.keras`
+Then open the app with Expo Go or an Android build.
 
-La ruta `.keras` esta disponible en `ml/src/ecosort/keras_train.py`. Requiere un entorno con TensorFlow compatible; recomendado Python 3.11 o 3.12:
+## Model Artifacts
+
+The trained `.keras` model is not stored in the repository because it is a heavy generated artifact. To run the full neural inference mode, place the trained model in the expected model artifact directory or train it again using the project scripts.
+
+If the model artifact is missing, the backend can still run in a reduced semantic mode, but the complete project is intended to use the multimodal neural network.
+
+## Training
+
+The repository includes helper scripts for preparing data and training the model:
 
 ```powershell
-cd C:\Users\User\Desktop\final\ml
-python -m venv .venv-keras
-.\.venv-keras\Scripts\Activate.ps1
-pip install -r requirements-keras.txt
-$env:PYTHONPATH = (Resolve-Path ".\src").Path
-python -m ecosort.keras_train --annotations ..\ml\artifacts\data --output-dir ..\ml\artifacts\models\keras_pro
+.\scripts\prepare_data.ps1
+.\scripts\train_keras.ps1
 ```
 
-El backend intenta cargar `best_model.keras` si existe; si TensorFlow no esta instalado o no hay `.keras`, usa automaticamente el checkpoint PyTorch disponible.
+Additional resume scripts are included for longer training runs.
 
-Corrida Keras actual: 120 epocas acumuladas sobre anotaciones enriquecidas, `test_accuracy = 0.9207`, `test_loss = 0.2485`, artefacto en `ml/artifacts/models/keras_pro/best_model.keras`.
+## Final Deliverables
 
-### 3. Levantar la API
+- Functional Android mobile app.
+- FastAPI backend connected to the multimodal model.
+- IEEE-style technical report.
+- Shark Tank-style pitch presentation.
+- Multimodal validation examples for image + text behavior.
 
-```powershell
-cd C:\Users\User\Desktop\final\backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+## Pitch
+
+The final presentation script is available at:
+
+```text
+docs/pitch/shark_tank_pitch.md
 ```
 
-### 4. Ejecutar la app móvil
+The pitch explains the problem, target users, solution, demo flow, neural network approach, results, value proposition, and closing statement.
 
-```powershell
-cd C:\Users\User\Desktop\final\mobile
-npm install
-npx expo start
-```
+## License
 
-## Entregables ya contemplados
+This project was developed for academic purposes as part of a Neural Networks and Deep Learning course.
 
-- `docs/report/ecosort_ieee.tex`: base del informe IEEE Conference.
-- `docs/pitch/shark_tank_pitch.md`: guion comercial/técnico del pitch.
-- `docs/pitch/slides_outline.md`: estructura de diapositivas.
-- `docs/supported_objects.md`: 562 objetos, descripciones, intenciones y subtipos soportados por la capa hibrida.
-- `docs/training_workflow.md`: flujo profesional PyTorch + Keras, artefactos y comandos.
-- `mobile/`: demo funcional del producto.
-- `backend/`: servicio listo para conectar la app con el modelo.
-
-## Verificacion realizada en esta base
-
-- Se generaron anotaciones multimodales en `ml/artifacts/data/`.
-- Se entreno un checkpoint de humo en `ml/artifacts/models/smoke/`.
-- Se evaluo ese checkpoint en `ml/artifacts/reports/smoke/`.
-- Resultado de humo sobre `test`: `accuracy = 0.3771`, `macro_f1 = 0.1834`.
-
-Estos valores no son el resultado final que deberian presentar; sirven como prueba de que el pipeline completo funciona y como base para un entrenamiento mas largo.
-
-## Idea de valor para el pitch
-
-`EcoSort convierte una duda cotidiana en una decisión ambiental correcta en menos de 5 segundos.`
